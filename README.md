@@ -87,3 +87,12 @@ run.bat
 ```
 This automatically compiles the Angular UI, embeds static assets into `server/src/main/resources/static/`, and boots the Spring Boot backend server on `http://localhost:8080`.
 
+---
+
+## License
+
+Copyright (c) 2026 Firoj Mujawar. All Rights Reserved.
+
+This repository and its source code are **strictly proprietary and confidential**. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without prior written permission. See [LICENSE](LICENSE) for details.
+
+
