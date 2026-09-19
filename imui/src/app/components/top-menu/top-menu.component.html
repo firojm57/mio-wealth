@@ -57,7 +57,7 @@
         class="flex items-center justify-center p-0.5 rounded-full border border-border hover:ring-2 hover:ring-accent-secondary transition-all duration-300 cursor-pointer">
         <div
           class="w-8 h-8 rounded-full bg-gradient-to-tr from-accent-primary to-accent-primary/80 text-card font-bold text-xs flex items-center justify-center shadow-sm">
-          FM
+          {{ getUserInitials() }}
         </div>
       </button>
 
@@ -69,8 +69,8 @@
       <div
         class="absolute right-0 top-11 mt-2 w-48 bg-card border border-border rounded-2xl shadow-xl z-50 py-2 animate-fade-in transition-colors duration-300">
         <div class="px-4 py-2 border-b border-border/50">
-          <div class="font-bold text-xs text-text-primary">Firoj Mujawar</div>
-          <div class="font-medium text-[10px] text-text-secondary mt-0.5">firojm57@gmail.com</div>
+          <div class="font-bold text-xs text-text-primary">{{ getUserDisplayName() }}</div>
+          <div class="font-medium text-[10px] text-text-secondary mt-0.5">{{ getUserEmail() }}</div>
         </div>
 
         <button (click)="selectSettings()"
@@ -81,7 +81,7 @@
           <span>{{ 'NAV.SETTINGS' | translate }}</span>
         </button>
 
-        <button (click)="closeDropdown()"
+        <button (click)="signOut()"
           class="w-full text-left px-4 py-2 font-semibold text-xs text-feedback-danger hover:bg-background transition-colors duration-200 flex items-center space-x-2 cursor-pointer">
           <svg class="w-4 h-4 text-feedback-danger">
             <use href="assets/icons.svg#icon-logout"></use>

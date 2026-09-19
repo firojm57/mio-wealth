@@ -1,0 +1,58 @@
+services:
+  # ==========================================================================
+  # PostgreSQL Database Service
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: mio-wealth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-investmanDB}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-investmanDB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mio-wealth-net
+
+  # ==========================================================================
+  # Unified Mio Wealth Application (Angular SPA + Spring Boot REST API)
+  # ==========================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mio-wealth-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-investmanDB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      SPRING_DATASOURCE_DRIVER: org.postgresql.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:-9a4f2c8d3e7b1a5f6c8d2e4b7a9c1d3f5e7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:4200}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    networks:
+      - mio-wealth-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  mio-wealth-net:
+    driver: bridge

@@ -4,10 +4,10 @@
   <!-- Tight list spacing to keep all 7 elements perfectly within vertical viewport bounds -->
   <div class="flex flex-col space-y-2.5 w-full items-center">
     @for (item of navItems; track item.tab) {
-    <button (click)="selectTab(item.tab)"
+    <button (click)="selectItem(item)"
       class="group flex flex-col items-center space-y-0.5 w-full py-0.5 text-center cursor-pointer relative">
       <!-- Proportioned active/inactive highlight circles -->
-      <div [class]="getDesktopIconClass(item.tab)"
+      <div [class]="getDesktopIconClass(item)"
         class="w-9.5 h-9.5 rounded-full flex items-center justify-center transition-all duration-300">
         <svg class="w-5 h-5">
           <use [attr.href]="'assets/icons.svg#' + item.icon"></use>
@@ -15,7 +15,7 @@
       </div>
 
       <!-- Clear, semi-bold text label -->
-      <span [class.text-text-primary]="isActive(item.tab)" [class.text-text-secondary]="!isActive(item.tab)"
+      <span [class.text-text-primary]="isActive(item)" [class.text-text-secondary]="!isActive(item)"
         class="font-semibold text-[11px] tracking-tight transition-colors duration-200">
         {{ item.translationKey | translate }}
       </span>
@@ -24,7 +24,6 @@
   </div>
 </aside>
 
-<!-- 2. Mobile Sidebar Sliding Drawer Overlay (only visible on Mobile (< 768px) when active) -->
 <!-- 2. Mobile Sidebar Sliding Drawer Overlay (only visible on Mobile (< 768px) when active) -->
 <div 
   class="md:hidden fixed inset-0 z-50 flex transition-all duration-300"
@@ -67,11 +66,11 @@
     <!-- Drawer Navigation List -->
     <div class="flex-1 flex flex-col space-y-2 overflow-y-auto">
       @for (item of navItems; track item.tab) {
-      <button (click)="selectTab(item.tab); dashboardService.closeMobileMenu()"
+      <button (click)="selectItem(item); dashboardService.closeMobileMenu()"
         class="flex items-center space-x-3.5 w-full py-2.5 px-4.5 rounded-2xl transition-all duration-300 cursor-pointer"
-        [class.bg-text-primary]="isActive(item.tab)" [class.text-card]="isActive(item.tab)"
-        [class.text-text-secondary]="!isActive(item.tab)" [class.hover:bg-background]="!isActive(item.tab)"
-        [class.hover:text-text-primary]="!isActive(item.tab)">
+        [class.bg-text-primary]="isActive(item)" [class.text-card]="isActive(item)"
+        [class.text-text-secondary]="!isActive(item)" [class.hover:bg-background]="!isActive(item)"
+        [class.hover:text-text-primary]="!isActive(item)">
         <svg class="w-5 h-5">
           <use [attr.href]="'assets/icons.svg#' + item.icon"></use>
         </svg>
