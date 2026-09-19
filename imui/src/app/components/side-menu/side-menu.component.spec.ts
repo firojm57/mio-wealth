@@ -1,7 +1,9 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { SideMenuComponent } from './side-menu.component';
+import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
+import { SideMenuComponent } from './side-menu.component';
 import { DashboardService } from '../../services/dashboard.service';
+import { routes } from '../../app.routes';
 
 describe('SideMenuComponent', () => {
   let component: SideMenuComponent;
@@ -11,7 +13,10 @@ describe('SideMenuComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SideMenuComponent, TranslateModule.forRoot()],
-      providers: [DashboardService]
+      providers: [
+        DashboardService,
+        provideRouter(routes)
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SideMenuComponent);

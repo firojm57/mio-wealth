@@ -1,7 +1,11 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { TopMenuComponent } from './top-menu.component';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TranslateModule } from '@ngx-translate/core';
+import { TopMenuComponent } from './top-menu.component';
 import { DashboardService } from '../../services/dashboard.service';
+import { routes } from '../../app.routes';
 
 describe('TopMenuComponent', () => {
   let component: TopMenuComponent;
@@ -11,7 +15,12 @@ describe('TopMenuComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TopMenuComponent, TranslateModule.forRoot()],
-      providers: [DashboardService]
+      providers: [
+        DashboardService,
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TopMenuComponent);

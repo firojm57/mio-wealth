@@ -5,7 +5,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import java.util.Set;
 
 @Getter
@@ -25,28 +35,23 @@ public class UserProfile extends UserAudit {
     }
 
     @Id
-    @GeneratedValue(generator = "user_profile_id_generator")
-    @SequenceGenerator(
-            name = "user_profile_id_generator",
-            sequenceName = "user_profile_id_sequence",
-            initialValue = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_profile_id", nullable = false)
     private long id;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "middle_name")
+    @Column(name = "middle_name", length = 100)
     private String middleName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "email_id", nullable = false)
+    @Column(name = "email_id", nullable = false, length = 150)
     private String email;
 
-    @Column(name = "mobile_number")
+    @Column(name = "mobile_number", length = 30)
     private String mobile;
 
     @OneToMany(mappedBy = "userProfile",
@@ -54,7 +59,7 @@ public class UserProfile extends UserAudit {
             cascade = CascadeType.ALL)
     private Set<Address> addresses;
 
-    @Column(name = "profile_picture")
+    @Column(name = "profile_picture", length = 255)
     private String profilePicture;
 
     @OneToOne(fetch = FetchType.LAZY)

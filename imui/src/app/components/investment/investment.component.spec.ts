@@ -1,7 +1,10 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
-import { InvestmentComponent } from './investment.component';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TranslateModule } from '@ngx-translate/core';
+import { InvestmentComponent } from './investment.component';
 import { DashboardService } from '../../services/dashboard.service';
+import { InvestmentService } from '../../services/investment.service';
 
 describe('InvestmentComponent', () => {
   let component: InvestmentComponent;
@@ -10,7 +13,12 @@ describe('InvestmentComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [InvestmentComponent, TranslateModule.forRoot()],
-      providers: [DashboardService]
+      providers: [
+        DashboardService,
+        InvestmentService,
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(InvestmentComponent);

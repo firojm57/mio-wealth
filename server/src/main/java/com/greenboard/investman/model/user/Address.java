@@ -4,7 +4,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Getter
 @Setter
@@ -18,22 +26,26 @@ public class Address {
     }
 
     @Id
-    @GeneratedValue(generator = "address_id_generator")
-    @SequenceGenerator(
-            name = "address_id_generator",
-            sequenceName = "address_id_sequence",
-            initialValue = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "address_id", nullable = false)
     private long addressId;
 
+    @Column(name = "line1", length = 255)
     private String line1;
+
+    @Column(name = "line2", length = 255)
     private String line2;
+
+    @Column(name = "city", length = 100)
     private String city;
+
+    @Column(name = "state", length = 100)
     private String state;
+
+    @Column(name = "country", length = 100)
     private String country;
 
-    @Column(name = "postal_code")
+    @Column(name = "postal_code", length = 20)
     private String postalCode;
 
     @ManyToOne(fetch = FetchType.LAZY)

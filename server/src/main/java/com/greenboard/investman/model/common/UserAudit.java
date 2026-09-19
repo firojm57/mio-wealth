@@ -7,7 +7,11 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -31,4 +35,23 @@ public class UserAudit implements Serializable {
     @Column(name = "last_login", nullable = false)
     @LastModifiedDate
     protected Date lastLogin;
+
+    @jakarta.persistence.PrePersist
+    protected void onCreate() {
+        Date now = new Date();
+        if (this.createdOn == null) {
+            this.createdOn = now;
+        }
+        if (this.updatedOn == null) {
+            this.updatedOn = now;
+        }
+        if (this.lastLogin == null) {
+            this.lastLogin = now;
+        }
+    }
+
+    @jakarta.persistence.PreUpdate
+    protected void onUpdate() {
+        this.updatedOn = new Date();
+    }
 }

@@ -1,0 +1,103 @@
+# ==============================================================================
+# Mio Wealth (Monorepo) — Centralized .gitignore
+# Single source of truth for repository-wide file exclusions
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Local Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ------------------------------------------------------------------------------
+# 2. Operating System Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------------------------------------
+# 3. IDEs & Editors
+# ------------------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.c9/
+*.launch
+.history/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+
+# ------------------------------------------------------------------------------
+# 4. Frontend Tier (imui — Angular & Node.js)
+# ------------------------------------------------------------------------------
+**/node_modules/
+imui/dist/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+imui/.angular/
+.angular/
+.sass-cache/
+imui/coverage/
+coverage/
+imui/__screenshots__/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+testem.log
+connect.lock
+libpeerconnection.log
+typings/
+
+# ------------------------------------------------------------------------------
+# 5. Backend Tier (server — Java & Maven)
+# ------------------------------------------------------------------------------
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+!server/.mvn/wrapper/maven-wrapper.jar
+
+# ------------------------------------------------------------------------------
+# 6. AI related files
+# ------------------------------------------------------------------------------
+.codesight
+.codesight/
+antigravity
+AGENTS.md
+CLAUDE.md
+codex.md
+.cursorrules
+
+# Generated static UI assets (embedded at build time by run.bat / Dockerfile)
+server/src/main/resources/static/*
+
+# JVM Crash logs & runtime logs
+*.log
+logs/
+**/logs/
+hs_err_pid*
+replay_pid*
