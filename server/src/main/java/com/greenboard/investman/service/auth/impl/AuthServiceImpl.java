@@ -40,15 +40,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AuthResponseVO login(AuthRequestVO request) {
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new BadCredentialsException("Invalid user ID or password."));
 
-        // Support BCrypt hashed passwords, while allowing smooth migration for legacy accounts
-        boolean matches = passwordEncoder.matches(request.getPassword(), user.getPassword())
-                || request.getPassword().equals(user.getPassword());
-
-        if (!matches) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Invalid user ID or password.");
         }
 
@@ -64,8 +61,8 @@ public class AuthServiceImpl implements AuthService {
             profileVO.setMobile(profile.getMobile());
         } else {
             profileVO.setFirstName(user.getUserId());
-            profileVO.setLastName("User");
-            profileVO.setEmail(user.getUserId() + "@miowealth.local");
+            profileVO.setLastName("");
+            profileVO.setEmail("");
         }
 
         log.info("User '{}' authenticated successfully via JWT", user.getUserId());
@@ -75,13 +72,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public StatusVO register(UserRegisterVO request) {
-        if (userRepository.existsById(request.getUserId())) {
+        if (userRepository.existsByUserId(request.getUserId())) {
             throw new IllegalArgumentException("User ID already exists.");
         }
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         User user = new User(request.getUserId(), encodedPassword);
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         UserProfile profile = new UserProfile(
                 request.getFirstName(),
@@ -89,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
                 request.getLastName(),
                 request.getEmail(),
                 request.getMobile(),
-                user
+                savedUser
         );
         userProfileRepository.save(profile);
 

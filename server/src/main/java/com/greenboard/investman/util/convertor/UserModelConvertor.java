@@ -5,6 +5,7 @@ import com.greenboard.investman.vo.user.AddressVO;
 import com.greenboard.investman.vo.user.UserProfileVO;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class UserModelConvertor {
@@ -18,7 +19,7 @@ public final class UserModelConvertor {
             return null;
         }
 
-        java.util.Set<AddressVO> addresses = Collections.emptySet();
+        Set<AddressVO> addresses = Collections.emptySet();
         try {
             if (profile.getAddresses() != null) {
                 addresses = profile.getAddresses().stream()

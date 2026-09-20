@@ -65,10 +65,14 @@ Having all data endpoints prefixed with `/api` makes routing rules trivial and l
 | :--- | :--- | :--- | :--- | :--- |
 | **User Sign In** | `/login` | `POST /api/v1/auth/login` | `application/json` | Public |
 | **User Sign Up** | `/signup` | `POST /api/v1/auth/register` | `application/json` | Public |
-| **Portfolio Overview** | `/overview` | `GET /api/v1/balance` | `application/json` | `Bearer <JWT>` |
+| **Category Catalog** | Background / dropdowns | `GET /api/v1/categories?domain=...` | `application/json` | `Bearer <JWT>` |
+| **Portfolio Overview** | `/overview` | `GET /api/v1/balance/summary` | `application/json` | `Bearer <JWT>` |
 | **Holdings List** | `/investments` | `GET /api/v1/investments` | `application/json` | `Bearer <JWT>` |
 | **Record New Asset** | `/investments` (modal) | `POST /api/v1/investments` | `application/json` | `Bearer <JWT>` |
-| **Balance Breakdown** | `/balance` | `GET /api/v1/balance` | `application/json` | `Bearer <JWT>` |
+| **Assets Breakdown** | `/balance` | `GET /api/v1/balance/assets` | `application/json` | `Bearer <JWT>` |
+| **Liabilities Breakdown** | `/balance` | `GET /api/v1/balance/liabilities` | `application/json` | `Bearer <JWT>` |
+| **Add Liability** | `/balance` (modal) | `POST /api/v1/balance/liabilities` | `application/json` | `Bearer <JWT>` |
+| **Delete Liability** | `/balance` | `DELETE /api/v1/balance/liabilities/{id}` | `application/json` | `Bearer <JWT>` |
 | **Account Settings** | `/settings` | `GET /api/v1/users/profile` | `application/json` | `Bearer <JWT>` |
 
 ---

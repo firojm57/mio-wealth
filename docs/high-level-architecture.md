@@ -26,15 +26,21 @@ graph TB
 
         subgraph BusinessLayer["Application Services Tier"]
             AuthSvc["AuthService<br/>(BCrypt, Token Issuance)"]
-            PortfolioSvc["PortfolioService<br/>(Asset & Net Worth Aggregation)"]
-            InvestSvc["InvestmentService<br/>(Holdings & Asset Creation)"]
+            PortfolioSvc["PortfolioService<br/>(Net Worth & Summary Metrics)"]
+            AssetSvc["AssetService<br/>(Investments & Savings Assets)"]
+            LiabSvc["LiabilityService<br/>(Debt CRUD)"]
+            InvestSvc["InvestmentService<br/>(Holdings & Transactions)"]
+            CatSvc["CategoryService<br/>(Catalog Queries)"]
             UserSvc["UserService & UserProfileService"]
         end
 
         subgraph PersistenceLayer["Data Access Tier (JPA & Hibernate 6)"]
             UserRepo["UserRepository & UserProfileRepository"]
+            CatRepo["FinancialCategoryRepository"]
             InvestRepo["InvestmentRepository"]
             SavingRepo["SavingRepository"]
+            LiabRepo["LiabilityRepository"]
+            ExpRepo["ExpenseRepository"]
             HikariPool["HikariCP Connection Pool (Max: 10, Min: 2)"]
         end
     end
@@ -52,16 +58,26 @@ graph TB
     SecFilter -->|Authenticated Context| Dispatcher
     Dispatcher --> AuthSvc
     Dispatcher --> PortfolioSvc
+    Dispatcher --> AssetSvc
+    Dispatcher --> LiabSvc
     Dispatcher --> InvestSvc
+    Dispatcher --> CatSvc
     Dispatcher --> UserSvc
     AuthSvc --> UserRepo
-    PortfolioSvc --> InvestRepo
-    PortfolioSvc --> SavingRepo
+    PortfolioSvc --> AssetSvc
+    PortfolioSvc --> LiabSvc
+    AssetSvc --> InvestRepo
+    AssetSvc --> SavingRepo
+    LiabSvc --> LiabRepo
     InvestSvc --> InvestRepo
+    CatSvc --> CatRepo
     UserSvc --> UserRepo
     UserRepo --> HikariPool
+    CatRepo --> HikariPool
     InvestRepo --> HikariPool
     SavingRepo --> HikariPool
+    LiabRepo --> HikariPool
+    ExpRepo --> HikariPool
     HikariPool -->|TCP / JDBC Port 5432| PostgresDB
 ```
 

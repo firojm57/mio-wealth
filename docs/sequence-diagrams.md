@@ -37,8 +37,8 @@ sequenceDiagram
     UserRepo->>DB: INSERT INTO user_login (user_id, password) VALUES (?, ?)
 
     Svc->>ProfileRepo: save(new UserProfile(firstName, lastName, email, ..., user))
-    ProfileRepo->>DB: INSERT INTO user_profile (first_name, last_name, email_id, user_id, ...) VALUES (?, ?, ?, ?, ...)
-    DB-->>ProfileRepo: Generated ID 1
+    ProfileRepo->>DB: INSERT INTO user_profile (user_profile_id, first_name, last_name, email_id, user_id, ...) VALUES (?, ?, ?, ?, ...)
+    DB-->>ProfileRepo: Generated UUID v4 (user_profile_id)
 
     Svc-->>API: StatusVO(status: "Success")
     API-->>AuthSvcUI: HTTP 201 Created (StatusVO JSON)
@@ -110,11 +110,13 @@ sequenceDiagram
     participant SecContext as SecurityContextHolder
     participant Ctrl as BalanceController
     participant Svc as PortfolioServiceImpl
+    participant AssetSvc as AssetServiceImpl
+    participant LiabSvc as LiabilityServiceImpl
 
-    Component->>Interceptor: Dispatches GET /api/v1/balance
+    Component->>Interceptor: Dispatches concurrent requests (forkJoin):<br/>1. GET /api/v1/balance/summary<br/>2. GET /api/v1/balance/assets<br/>3. GET /api/v1/balance/liabilities
     Interceptor->>Storage: getItem('mio_wealth_auth_token')
     Storage-->>Interceptor: Bearer Token String
-    Interceptor->>Filter: HTTP GET /api/v1/balance<br/>Header: Authorization: Bearer <token>
+    Interceptor->>Filter: HTTP GET /api/v1/balance/*<br/>Header: Authorization: Bearer <token>
 
     Filter->>Filter: Extracts substring after "Bearer "
     Filter->>JwtProvider: validateToken(token)
@@ -127,17 +129,17 @@ sequenceDiagram
     Filter->>SecContext: setAuthentication(UsernamePasswordAuthenticationToken("alex_smith", ROLE_USER))
     Filter->>Ctrl: Proceeds filterChain.doFilter(request, response)
 
-    Ctrl->>Svc: getBalanceSummary(principal.getName())
-    Svc-->>Ctrl: BalanceSummaryVO(assets, liabilities, netWorth: 1,248,310)
-    Ctrl-->>Component: HTTP 200 OK (BalanceSummaryVO JSON)
-    Component->>User: Renders Net Worth ($1,248,310) & Asset Breakdown
+    Ctrl->>Svc: getBalanceMetrics(userId) -> calls AssetSvc and LiabSvc
+    Svc-->>Ctrl: BalanceMetricsVO(totalAssets: 1795650.0, totalLiabilities: 547340.0, netWorth: 1248310.0)
+    Ctrl-->>Component: HTTP 200 OK (Independent JSON endpoints)
+    Component->>User: Renders Net Worth & Asset/Liability Cards with Currency Pipe
 ```
 
 ---
 
 ## 4. Investment Creation & Persistence
 
-Shows how financial asset transactions are recorded.
+Shows how financial asset transactions are recorded with category classification and UUID generation.
 
 ```mermaid
 sequenceDiagram
@@ -147,25 +149,28 @@ sequenceDiagram
     participant API as InvestmentController
     participant Svc as InvestmentServiceImpl
     participant UserRepo as UserRepository
+    participant CatRepo as FinancialCategoryRepository
     participant InvestRepo as InvestmentRepository
     participant DB as PostgreSQL (investmanDB)
 
-    User->>UI: Submits new holding (Amount: $5000, Qty: 25, Action: BUY, Remarks: MSFT)
+    User->>UI: Submits new holding (Symbol: INFY, Name: Infosys Ltd, Category: STOCKS, Amount: 75000, Qty: 50)
     UI->>API: POST /api/v1/investments (InvestmentRequestVO JSON)<br/>Header: Authorization: Bearer <token>
     API->>API: Extracts Principal ("alex_smith")
     API->>Svc: createInvestment("alex_smith", request)
 
-    Svc->>UserRepo: findById("alex_smith")
+    Svc->>UserRepo: findByUserId("alex_smith")
     UserRepo-->>Svc: User entity
+    Svc->>CatRepo: findById("STOCKS")
+    CatRepo-->>Svc: FinancialCategory entity
 
-    Svc->>Svc: Instantiates new Investment(amount: 5000.0, quantity: 25, remarks: "MSFT", user)
+    Svc->>Svc: Instantiates new Investment(symbol: "INFY", category, amount: 75000.0, quantity: 50, tags: "#tech", user)
     Svc->>InvestRepo: save(investment)
-    InvestRepo->>DB: INSERT INTO investment (amount, quantity, remarks, action, user_id, investment_date) VALUES (...)
-    DB-->>InvestRepo: Generated investment_id: 105
+    InvestRepo->>DB: INSERT INTO investment (investment_id, symbol, asset_name, category_code, amount, quantity, user_id, ...) VALUES (?, ?, ?, ?, ?, ?, ?, ...)
+    DB-->>InvestRepo: Generated UUID v4 (investment_id)
 
-    Svc-->>API: InvestmentVO(id: 105, symbol: "INV-105", value: "$5,000", returnRate: "+5.0%")
+    Svc-->>API: InvestmentVO(id: "UUID", symbol: "INFY", categoryCode: "STOCKS", amount: 75000.0, ...)
     API-->>UI: HTTP 201 Created (InvestmentVO JSON)
-    UI->>User: Updates UI holdings list reactively
+    UI->>User: Updates UI holdings list reactively with currency pipe formatting
 ```
 
 ---

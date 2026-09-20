@@ -24,11 +24,11 @@
     <!-- Value -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
       <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Portfolio Value</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$120,151</div>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalValue | currency:'INR':'symbol':'1.0-0' }}</div>
       <div class="flex items-center space-x-1.5 mt-2">
         <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
           <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
-          <span>+6.4%</span>
+          <span>{{ totalValue > 0 ? '+0.0%' : '0.0%' }}</span>
         </span>
         <span class="text-xs font-medium text-text-secondary">All-Time Yield</span>
       </div>
@@ -37,14 +37,14 @@
     <!-- Cost Basis -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
       <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Total Invested</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$112,890</div>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalInvested | currency:'INR':'symbol':'1.0-0' }}</div>
       <div class="text-xs font-medium text-text-secondary mt-3">Initial capital cost basis</div>
     </div>
 
     <!-- Cash Balance -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
       <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Uninvested Cash</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$7,261</div>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ 0 | currency:'INR':'symbol':'1.0-0' }}</div>
       <div class="text-xs font-medium text-text-secondary mt-3">Ready to be deployed</div>
     </div>
   </div>
@@ -72,30 +72,45 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-border/20 text-xs font-semibold text-text-primary">
-          @for (hold of holdings; track hold.symbol) {
+          @for (hold of holdings; track hold.id) {
             <tr class="hover:bg-background/25 transition-colors duration-200">
               <td class="px-6 py-4.5 flex items-center space-x-3">
                 <div class="w-8 h-8 rounded-full bg-accent-secondary/10 text-accent-secondary flex items-center justify-center font-bold text-xs">
-                  {{ hold.symbol[0] }}
+                  {{ hold.symbol ? hold.symbol[0] : 'I' }}
                 </div>
                 <div>
-                  <div class="font-bold text-text-primary">{{ hold.name }}</div>
-                  <div class="text-[10px] text-text-secondary font-medium">{{ hold.symbol }}</div>
+                  <div class="font-bold text-text-primary flex items-center space-x-1.5">
+                    <span>{{ hold.name }}</span>
+                    @if (hold.tags) {
+                      <span class="text-[9px] px-1.5 py-0.2 rounded bg-accent-secondary/10 text-accent-secondary">{{ hold.tags }}</span>
+                    }
+                  </div>
+                  <div class="text-[10px] text-text-secondary font-medium">{{ hold.symbol }} &bull; {{ hold.categoryName }}</div>
                 </div>
               </td>
               <td class="px-6 py-4.5">
                 <div class="flex items-center space-x-2">
-                  <span class="font-bold">{{ hold.allocation }}</span>
+                  <span class="font-bold">{{ (totalValue > 0 ? (hold.amount / totalValue) : 0) | percent:'1.0-1' }}</span>
                   <div class="w-16 h-1.5 bg-background rounded-full overflow-hidden hidden sm:block">
-                    <div class="h-full bg-accent-secondary rounded-full" [style.width]="hold.allocation"></div>
+                    <div class="h-full bg-accent-secondary rounded-full" [style.width.%]="(totalValue > 0 ? (hold.amount / totalValue) * 100 : 0)"></div>
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-4.5">{{ hold.price }}</td>
-              <td class="px-6 py-4.5">{{ hold.shares }}</td>
-              <td class="px-6 py-4.5 font-bold">{{ hold.value }}</td>
-              <td class="px-6 py-4.5 text-right font-bold" [ngClass]="hold.up ? 'text-feedback-success' : 'text-feedback-danger'">
-                {{ hold.return }}
+              <td class="px-6 py-4.5">{{ hold.unitPrice | currency:'INR':'symbol':'1.2-2' }}</td>
+              <td class="px-6 py-4.5">{{ hold.quantity }}</td>
+              <td class="px-6 py-4.5 font-bold">{{ hold.amount | currency:'INR':'symbol':'1.0-0' }}</td>
+              <td class="px-6 py-4.5 text-right font-bold" [ngClass]="hold.returnRate >= 0 ? 'text-feedback-success' : 'text-feedback-danger'">
+                {{ hold.returnRate | percent:'1.1-2' }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-text-secondary">
+                <div class="flex flex-col items-center justify-center space-y-2">
+                  <svg class="w-8 h-8 text-text-secondary/40"><use href="assets/icons.svg#icon-investments"></use></svg>
+                  <span class="font-bold text-sm text-text-primary">No investment holdings recorded yet</span>
+                  <span class="text-xs text-text-secondary">Click "Add Transaction" to add your first investment.</span>
+                </div>
               </td>
             </tr>
           }

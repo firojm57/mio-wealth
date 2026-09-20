@@ -1,8 +1,10 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { forkJoin } from 'rxjs';
 import { DashboardService } from '../../services/dashboard.service';
 import { BalanceService } from '../../services/balance.service';
+import { getDomainIcon } from '../../models/category.model';
 
 @Component({
   selector: 'app-balance',
@@ -15,6 +17,8 @@ export class BalanceComponent implements OnInit {
   protected readonly dashboardService = inject(DashboardService);
   protected readonly balanceService = inject(BalanceService);
 
+  readonly getDomainIcon = getDomainIcon;
+
   get assets() {
     return this.balanceService.assets();
   }
@@ -24,7 +28,12 @@ export class BalanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.balanceService.loadBalanceSummary().subscribe();
+    // Load summary, assets, and liabilities concurrently via independent endpoints
+    forkJoin([
+      this.balanceService.loadSummary(),
+      this.balanceService.loadAssets(),
+      this.balanceService.loadLiabilities()
+    ]).subscribe();
   }
 
   getTotalAssets(): number {

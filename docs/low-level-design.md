@@ -18,6 +18,7 @@ graph TD
         AC["AuthController"]
         BC["BalanceController"]
         IC["InvestmentController"]
+        CC["CategoryController"]
         UC["UserController"]
         SC["SpaController"]
     end
@@ -25,57 +26,87 @@ graph TD
     subgraph ServiceContracts["2. Business Service Contracts (service)"]
         AS["AuthService"]
         PS["PortfolioService"]
+        AtS["AssetService"]
+        LS["LiabilityService"]
         IS["InvestmentService"]
+        CS["CategoryService"]
         UPS["UserProfileService"]
     end
 
     subgraph ServiceImpls["3. Service Implementations (service.*.impl)"]
         ASI["AuthServiceImpl"]
         PSI["PortfolioServiceImpl"]
+        AtSI["AssetServiceImpl"]
+        LSI["LiabilityServiceImpl"]
         ISI["InvestmentServiceImpl"]
+        CSI["CategoryServiceImpl"]
         UPSI["UserProfileServiceImpl"]
     end
 
     subgraph DataAccess["4. Persistence Layer (repository)"]
         UR["UserRepository"]
         UPR["UserProfileRepository"]
+        CR["FinancialCategoryRepository"]
         IR["InvestmentRepository"]
         SR["SavingRepository"]
+        LR["LiabilityRepository"]
+        ER["ExpenseRepository"]
     end
 
     subgraph DomainEntities["5. Relational Entities (model)"]
         UE["User (user_login)"]
         UPE["UserProfile (user_profile)"]
         AE["Address (user_address)"]
+        FC["FinancialCategory (financial_category)"]
         IE["Investment (investment)"]
-        ITE["InvestmentType (investment_type)"]
         SE["Saving (saving)"]
+        LE["Liability (liability)"]
+        EE["Expense (expense)"]
     end
 
     AC --> AS
     BC --> PS
+    BC --> AtS
+    BC --> LS
     IC --> IS
+    CC --> CS
     UC --> UPS
 
     AS -.-> ASI
     PS -.-> PSI
+    AtS -.-> AtSI
+    LS -.-> LSI
     IS -.-> ISI
+    CS -.-> CSI
     UPS -.-> UPSI
 
     ASI --> UR
     ASI --> UPR
-    PSI --> IR
-    PSI --> SR
+    PSI --> AtS
+    PSI --> LS
+    AtSI --> IR
+    AtSI --> SR
+    LSI --> LR
+    LSI --> UR
+    LSI --> CR
     ISI --> IR
     ISI --> UR
+    ISI --> CR
+    CSI --> CR
     UPSI --> UPR
 
     UR --> UE
     UPR --> UPE
+    CR --> FC
     IR --> IE
     SR --> SE
-    IE --> ITE
+    LR --> LE
+    ER --> EE
     UPE --> AE
+    IE --> FC
+    SE --> FC
+    LE --> FC
+    EE --> FC
 ```
 
 ---

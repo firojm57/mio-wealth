@@ -89,9 +89,10 @@ Declared inside [`SecurityConfiguration.java`](file:///d:/F_Drive/github/mio-wea
 | `/`, `/index.html`, `/favicon.ico` | `GET` | `permitAll()` | Static frontend bootstrapping assets. |
 | `/*.js`, `/*.css`, `/assets/**`, `/static/**` | `GET` | `permitAll()` | Angular compiled JavaScript, styles, fonts, and SVG icons. |
 | `/overview`, `/investments`, `/balance`, `/cash-flow`, `/expenses`, `/performance`, `/goals`, `/settings`, `/login`, `/signup` | `GET` | `permitAll()` | Client-side SPA routes forwarded server-side to `index.html`. |
+| `/api/v1/categories/**` | `GET` | `authenticated()` | Database-backed category catalog partitioned by domain. |
 | `/api/v1/users/**` | `GET` | `authenticated()` | Protected investor user profile (`/profile`). |
 | `/api/v1/investments/**` | `GET`, `POST` | `authenticated()` | Protected user portfolio holdings and investment creation. |
-| `/api/v1/balance/**` | `GET` | `authenticated()` | Protected user balance summary, assets, liabilities, and net worth. |
+| `/api/v1/balance/**` | `GET`, `POST`, `DELETE` | `authenticated()` | Protected portfolio summary, assets, liabilities CRUD. |
 | `/api/v1/savings/**`, `/api/v1/portfolio/**` | Any | `authenticated()` | Reserved protected financial calculation endpoints. |
 | Any other request | Any | `authenticated()` | Zero-trust default: all unlisted routes require authentication. |
 

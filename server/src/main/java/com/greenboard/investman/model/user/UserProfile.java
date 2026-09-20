@@ -1,10 +1,6 @@
 package com.greenboard.investman.model.user;
 
 import com.greenboard.investman.model.common.UserAudit;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +12,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Set;
 
 @Getter
@@ -35,9 +35,9 @@ public class UserProfile extends UserAudit {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_profile_id", nullable = false)
-    private long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", length = 36, nullable = false, updatable = false)
+    private String id;
 
     @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
@@ -63,6 +63,6 @@ public class UserProfile extends UserAudit {
     private String profilePicture;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_fk", nullable = false)
     private User user;
 }

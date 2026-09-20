@@ -129,7 +129,7 @@
 
   <!-- cashflow icon -->
   <symbol id="icon-cashflow" viewBox="0 0 24 24">
-    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 3h12M6 8h12M6 13l8.5 8M6 8h4.5a4.5 4.5 0 0 0 0-5H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
 
   <!-- expenses icon -->

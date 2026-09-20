@@ -1,17 +1,43 @@
+export interface BalanceMetrics {
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  equityRatio: number;
+}
+
 export interface AssetItem {
+  id: string;
   name: string;
-  category: string;
-  value: number;
-  change: string;
-  icon: string;
+  symbol: string;
+  domain: string;
+  categoryCode: string;
+  categoryName: string;
+  amount: number;
+  quantity: number;
+  unitPrice: number;
+  tags?: string;
+  date?: string;
 }
 
 export interface LiabilityItem {
+  id: string;
   name: string;
-  category: string;
-  value: number;
-  rate: string;
-  icon: string;
+  domain: string;
+  categoryCode: string;
+  categoryName: string;
+  amount: number;
+  interestRate: number;
+  tags?: string;
+  createdAt?: string;
+}
+
+export interface LiabilityRequest {
+  name: string;
+  categoryCode: string;
+  amount: number;
+  interestRate: number;
+  remarks?: string;
+  tags?: string;
 }
 
 export interface BalanceSummary {

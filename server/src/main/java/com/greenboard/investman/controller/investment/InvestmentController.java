@@ -44,7 +44,8 @@ public class InvestmentController {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        log.info("Creating investment for user '{}' (action: {}, amount: {})", principal.getName(), request.getAction(), request.getAmount());
+        log.info("Creating investment for user '{}' (symbol: {}, amount: {})",
+                principal.getName(), request.getSymbol(), request.getAmount());
         return ResponseEntity.status(HttpStatus.CREATED).body(investmentService.createInvestment(principal.getName(), request));
     }
 }
