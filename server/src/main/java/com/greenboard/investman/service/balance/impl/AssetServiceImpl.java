@@ -25,9 +25,9 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AssetItemVO> getAssetsForUser(String userId) {
-        List<Investment> investments = investmentRepository.findByUser_UserId(userId);
-        List<Saving> savings = savingRepository.findByUser_UserId(userId);
+    public List<AssetItemVO> getAssets() {
+        List<Investment> investments = investmentRepository.findAll();
+        List<Saving> savings = savingRepository.findAll();
 
         List<AssetItemVO> assets = new ArrayList<>();
 
@@ -68,8 +68,8 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     @Transactional(readOnly = true)
-    public double calculateTotalAssets(String userId) {
-        List<AssetItemVO> assets = getAssetsForUser(userId);
+    public double calculateTotalAssets() {
+        List<AssetItemVO> assets = getAssets();
         return assets.stream().mapToDouble(AssetItemVO::getAmount).sum();
     }
 }

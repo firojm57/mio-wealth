@@ -29,14 +29,14 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     @Transactional(readOnly = true)
-    public BalanceMetricsVO getSummaryMetrics(String userId) {
-        double totalAssets = assetService.calculateTotalAssets(userId);
-        double totalLiabilities = liabilityService.calculateTotalLiabilities(userId);
+    public BalanceMetricsVO getSummaryMetrics() {
+        double totalAssets = assetService.calculateTotalAssets();
+        double totalLiabilities = liabilityService.calculateTotalLiabilities();
         double netWorth = totalAssets - totalLiabilities;
         double equityRatio = totalAssets > 0 ? (netWorth / totalAssets) * 100.0 : 0.0;
 
-        log.debug("Computed balance metrics for user '{}': Assets={}, Liabilities={}, NetWorth={}",
-                userId, totalAssets, totalLiabilities, netWorth);
+        log.debug("Computed balance metrics: Assets={}, Liabilities={}, NetWorth={}",
+                totalAssets, totalLiabilities, netWorth);
 
         return BalanceMetricsVO.builder()
                 .totalAssets(totalAssets)
@@ -48,17 +48,17 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     @Transactional(readOnly = true)
-    public BalanceSummaryVO getFullBalanceSummary(String userId) {
-        List<AssetItemVO> assets = assetService.getAssetsForUser(userId);
-        List<LiabilityItemVO> liabilities = liabilityService.getLiabilitiesForUser(userId);
+    public BalanceSummaryVO getFullBalanceSummary() {
+        List<AssetItemVO> assets = assetService.getAssets();
+        List<LiabilityItemVO> liabilities = liabilityService.getLiabilities();
 
         double totalAssets = assets.stream().mapToDouble(AssetItemVO::getAmount).sum();
         double totalLiabilities = liabilities.stream().mapToDouble(LiabilityItemVO::getAmount).sum();
         double netWorth = totalAssets - totalLiabilities;
         double equityRatio = totalAssets > 0 ? (netWorth / totalAssets) * 100.0 : 0.0;
 
-        log.debug("Computed full balance summary for user '{}': Assets count={}, Liabilities count={}",
-                userId, assets.size(), liabilities.size());
+        log.debug("Computed full balance summary: Assets count={}, Liabilities count={}",
+                assets.size(), liabilities.size());
 
         return BalanceSummaryVO.builder()
                 .totalAssets(totalAssets)

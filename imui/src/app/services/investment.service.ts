@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { InvestmentDTO, InvestmentHolding, InvestmentSummary } from '../models/investment.model';
+import { InvestmentDTO, InvestmentHolding } from '../models/investment.model';
 
 @Injectable({
   providedIn: 'root'
@@ -30,12 +30,23 @@ export class InvestmentService {
     );
   }
 
-  addInvestment(payload: InvestmentDTO): Observable<InvestmentDTO> {
+  getInvestment(id: string): Observable<InvestmentHolding> {
+    const url = `${environment.apiPrefix}/investments/${id}`;
+    return this.http.get<InvestmentHolding>(url);
+  }
+
+  addInvestment(payload: InvestmentDTO): Observable<InvestmentHolding> {
     const url = `${environment.apiPrefix}/investments`;
-    return this.http.post<InvestmentDTO>(url, payload).pipe(
-      tap(() => {
-        this.loadHoldings().subscribe();
-      })
-    );
+    return this.http.post<InvestmentHolding>(url, payload);
+  }
+
+  updateInvestment(id: string, payload: InvestmentDTO): Observable<InvestmentHolding> {
+    const url = `${environment.apiPrefix}/investments/${id}`;
+    return this.http.put<InvestmentHolding>(url, payload);
+  }
+
+  deleteInvestment(id: string): Observable<void> {
+    const url = `${environment.apiPrefix}/investments/${id}`;
+    return this.http.delete<void>(url);
   }
 }

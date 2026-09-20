@@ -1,5 +1,6 @@
 package com.greenboard.investman.security;
 
+import com.greenboard.investman.multitenancy.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +37,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwt != null && !jwt.isBlank() && tokenProvider.validateToken(jwt)) {
                 String username = tokenProvider.getUsernameFromToken(jwt);
-                log.debug("Authenticated user '{}' for request [{} {}]", username, request.getMethod(), request.getRequestURI());
+                String tenant = tokenProvider.getTenantFromToken(jwt);
+
+                TenantContext.setTenantId(tenant);
+                log.debug("Authenticated user '{}' on tenant '{}' for [{} {}]",
+                        username, tenant, request.getMethod(), request.getRequestURI());
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null,
@@ -44,12 +49,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                TenantContext.setTenantId(TenantContext.DEFAULT_TENANT);
             }
-        } catch (Exception ex) {
-            log.error("Could not set user authentication in security context", ex);
-        }
 
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+        } catch (Exception ex) {
+            log.error("Could not set user authentication or tenant in security context", ex);
+            filterChain.doFilter(request, response);
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {

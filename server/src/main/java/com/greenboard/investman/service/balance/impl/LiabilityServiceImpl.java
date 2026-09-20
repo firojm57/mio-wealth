@@ -2,10 +2,8 @@ package com.greenboard.investman.service.balance.impl;
 
 import com.greenboard.investman.model.category.FinancialCategory;
 import com.greenboard.investman.model.liability.Liability;
-import com.greenboard.investman.model.user.User;
 import com.greenboard.investman.repository.category.FinancialCategoryRepository;
 import com.greenboard.investman.repository.liability.LiabilityRepository;
-import com.greenboard.investman.repository.user.UserRepository;
 import com.greenboard.investman.service.balance.LiabilityService;
 import com.greenboard.investman.vo.balance.LiabilityItemVO;
 import com.greenboard.investman.vo.balance.LiabilityRequestVO;
@@ -24,21 +22,18 @@ public class LiabilityServiceImpl implements LiabilityService {
     private static final Logger log = LoggerFactory.getLogger(LiabilityServiceImpl.class);
 
     private final LiabilityRepository liabilityRepository;
-    private final UserRepository userRepository;
     private final FinancialCategoryRepository categoryRepository;
 
     public LiabilityServiceImpl(LiabilityRepository liabilityRepository,
-                                UserRepository userRepository,
                                 FinancialCategoryRepository categoryRepository) {
         this.liabilityRepository = liabilityRepository;
-        this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<LiabilityItemVO> getLiabilitiesForUser(String userId) {
-        List<Liability> liabilities = liabilityRepository.findByUser_UserId(userId);
+    public List<LiabilityItemVO> getLiabilities() {
+        List<Liability> liabilities = liabilityRepository.findAll();
         return liabilities.stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
@@ -46,17 +41,14 @@ public class LiabilityServiceImpl implements LiabilityService {
 
     @Override
     @Transactional(readOnly = true)
-    public double calculateTotalLiabilities(String userId) {
-        List<Liability> liabilities = liabilityRepository.findByUser_UserId(userId);
+    public double calculateTotalLiabilities() {
+        List<Liability> liabilities = liabilityRepository.findAll();
         return liabilities.stream().mapToDouble(Liability::getAmount).sum();
     }
 
     @Override
     @Transactional
-    public LiabilityItemVO createLiability(String userId, LiabilityRequestVO request) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-
+    public LiabilityItemVO createLiability(LiabilityRequestVO request) {
         FinancialCategory category = categoryRepository.findById(request.getCategoryCode())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category code: " + request.getCategoryCode()));
 
@@ -68,21 +60,20 @@ public class LiabilityServiceImpl implements LiabilityService {
         liability.setRemarks(request.getRemarks());
         liability.setTags(request.getTags());
         liability.setCreatedAt(LocalDateTime.now());
-        liability.setUser(user);
 
         Liability saved = liabilityRepository.save(liability);
-        log.info("Created liability #{} for user '{}' (amount: {})", saved.getId(), userId, saved.getAmount());
+        log.info("Created liability #{} (amount: {})", saved.getId(), saved.getAmount());
 
         return toVO(saved);
     }
 
     @Override
     @Transactional
-    public void deleteLiability(String userId, String liabilityId) {
-        Liability liability = liabilityRepository.findByIdAndUser_UserId(liabilityId, userId)
+    public void deleteLiability(String liabilityId) {
+        Liability liability = liabilityRepository.findById(liabilityId)
                 .orElseThrow(() -> new IllegalArgumentException("Liability not found: " + liabilityId));
         liabilityRepository.delete(liability);
-        log.info("Deleted liability #{} for user '{}'", liabilityId, userId);
+        log.info("Deleted liability #{}", liabilityId);
     }
 
     private LiabilityItemVO toVO(Liability liability) {

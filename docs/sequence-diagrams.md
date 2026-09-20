@@ -1,12 +1,12 @@
 # End-to-End Sequence & Workflow Diagrams
 
-This document illustrates the step-by-step runtime flows across the presentation, security, business service, and database tiers using detailed Mermaid sequence diagrams.
+This document illustrates the step-by-step runtime flows across presentation, security, multi-tenancy routing, business service, and database tiers using Mermaid sequence diagrams.
 
 ---
 
-## 1. User Self-Registration Workflow
+## 1. User Self-Registration & Tenant Provisioning Workflow
 
-Illustrates the end-to-end flow when a user creates an account from [`/signup`](file:///d:/F_Drive/github/mio-wealth/imui/src/app/components/signup/signup.component.ts).
+Illustrates the flow when a user creates an account from [`/signup`](file:///d:/F_Drive/github/mio-wealth/imui/src/app/components/signup/signup.component.ts), including dynamic schema provisioning and Flyway migration.
 
 ```mermaid
 sequenceDiagram
@@ -18,27 +18,33 @@ sequenceDiagram
     participant Svc as AuthServiceImpl
     participant Encrypt as BCryptPasswordEncoder
     participant UserRepo as UserRepository
+    participant ProvSvc as TenantProvisioningService
+    participant Flyway as Flyway Migration Engine
     participant ProfileRepo as UserProfileRepository
     participant DB as PostgreSQL (investmanDB)
 
-    User->>UI: Fills form (userId, password, name, email) & clicks "Create Account"
-    UI->>UI: isFormValid() checks password length >= 6 and match
+    User->>UI: Fills form (username, password, name, email) & clicks "Create Account"
     UI->>AuthSvcUI: register(userRegisterRequest)
     AuthSvcUI->>API: POST /api/v1/auth/register (UserRegisterVO JSON)
     API->>Svc: register(request)
-    Svc->>UserRepo: existsById(request.getUserId())
-    UserRepo->>DB: SELECT count(*) FROM user_login WHERE user_id = ?
-    DB-->>UserRepo: 0 (User does not exist)
+    Svc->>UserRepo: existsByUserId(request.getUserId())
+    UserRepo->>DB: SELECT count(*) FROM public.user_login WHERE user_id = ?
+    DB-->>UserRepo: 0 (Username available)
 
+    Svc->>Svc: Generates tenantSchema = "tenant_" + UUIDv4
     Svc->>Encrypt: encode(rawPassword)
     Encrypt-->>Svc: BCrypt hash string ($2a$10$...)
 
-    Svc->>UserRepo: save(new User(userId, encodedPassword))
-    UserRepo->>DB: INSERT INTO user_login (user_id, password) VALUES (?, ?)
+    Svc->>UserRepo: save(User with tenantSchema)
+    UserRepo->>DB: INSERT INTO public.user_login (id, user_id, password, tenant_schema) VALUES (?, ?, ?, ?)
 
-    Svc->>ProfileRepo: save(new UserProfile(firstName, lastName, email, ..., user))
-    ProfileRepo->>DB: INSERT INTO user_profile (user_profile_id, first_name, last_name, email_id, user_id, ...) VALUES (?, ?, ?, ?, ...)
-    DB-->>ProfileRepo: Generated UUID v4 (user_profile_id)
+    Svc->>ProvSvc: provisionTenant(tenantSchema)
+    ProvSvc->>DB: CREATE SCHEMA IF NOT EXISTS "tenant_uuid"
+    ProvSvc->>Flyway: Programmatically execute migrations from db/migration/tenants
+    Flyway->>DB: Creates user_profile, user_address, investment, saving, liability, expense in tenant schema
+
+    Svc->>ProvSvc: initTenantProfile(tenantSchema, firstName, ...)
+    ProvSvc->>DB: INSERT INTO "tenant_uuid".user_profile (...) VALUES (...)
 
     Svc-->>API: StatusVO(status: "Success")
     API-->>AuthSvcUI: HTTP 201 Created (StatusVO JSON)
@@ -49,9 +55,9 @@ sequenceDiagram
 
 ---
 
-## 2. Authentication & JWT Token Issuance
+## 2. Authentication & Multi-Tenant Token Issuance
 
-Illustrates the credential validation, BCrypt comparison, and HMAC-SHA256 signature generation.
+Illustrates credential validation against `public.user_login`, tenant schema extraction, and JWT issuance with embedded `tenant` claim.
 
 ```mermaid
 sequenceDiagram
@@ -62,27 +68,29 @@ sequenceDiagram
     participant API as AuthController
     participant Svc as AuthServiceImpl
     participant UserRepo as UserRepository
-    participant ProfileRepo as UserProfileRepository
     participant Encrypt as BCryptPasswordEncoder
     participant JwtProvider as JwtTokenProvider
+    participant ProvSvc as TenantProvisioningService
     participant Storage as Browser sessionStorage
 
-    User->>UI: Enters userId & password, clicks "Sign In"
+    User->>UI: Enters username & password, clicks "Sign In"
     UI->>AuthSvcUI: login({ userId, password })
     AuthSvcUI->>API: POST /api/v1/auth/login (AuthRequestVO JSON)
     API->>Svc: login(request)
-    Svc->>UserRepo: findById(request.getUserId())
-    UserRepo-->>Svc: User entity (with BCrypt hash)
+    Svc->>UserRepo: findByUserId(request.getUserId())
+    UserRepo-->>Svc: User entity (with BCrypt hash & tenantSchema)
 
     Svc->>Encrypt: matches(rawPassword, entityPasswordHash)
     Encrypt-->>Svc: true (Valid password)
 
-    Svc->>JwtProvider: generateToken(userId)
-    JwtProvider->>JwtProvider: Builds JWT with subject, iat, exp (+24h), signs with HMAC-SHA256
+    Svc->>JwtProvider: generateToken(userId, user.getTenantSchema())
+    JwtProvider->>JwtProvider: Builds JWT with subject: userId, tenant: tenantSchema, exp: +24h
     JwtProvider-->>Svc: Compact signed JWT token string
 
-    Svc->>ProfileRepo: findByUser_UserId(userId)
-    ProfileRepo-->>Svc: UserProfile entity
+    Svc->>ProvSvc: getTenantProfile(user.getTenantSchema())
+    ProvSvc->>DB: SELECT first_name, last_name, email_id FROM "tenant_uuid".user_profile LIMIT 1
+    DB-->>ProvSvc: UserProfileVO
+    ProvSvc-->>Svc: UserProfileVO
     Svc-->>API: AuthResponseVO(token, userId, userProfileVO)
     API-->>AuthSvcUI: HTTP 200 OK (AuthResponseVO JSON)
 
@@ -94,88 +102,115 @@ sequenceDiagram
 
 ---
 
-## 3. Authenticated Financial Request Execution
+## 3. Authenticated Request with Dynamic Schema Routing
 
-Demonstrates how [`authInterceptor`](file:///d:/F_Drive/github/mio-wealth/imui/src/app/interceptors/auth.interceptor.ts) and [`JwtAuthenticationFilter`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/security/JwtAuthenticationFilter.java) secure requests.
+Demonstrates how [`JwtAuthenticationFilter`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/security/JwtAuthenticationFilter.java) populates [`TenantContext`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/multitenancy/TenantContext.java) and [`SchemaMultiTenantConnectionProvider`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/multitenancy/SchemaMultiTenantConnectionProvider.java) routes database queries to the tenant schema.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as User Browser
-    participant Component as BalanceComponent
+    participant Component as InvestmentComponent
     participant Interceptor as authInterceptor
     participant Storage as sessionStorage
     participant Filter as JwtAuthenticationFilter
     participant JwtProvider as JwtTokenProvider
-    participant SecContext as SecurityContextHolder
-    participant Ctrl as BalanceController
-    participant Svc as PortfolioServiceImpl
-    participant AssetSvc as AssetServiceImpl
-    participant LiabSvc as LiabilityServiceImpl
+    participant TenantCtx as TenantContext
+    participant Ctrl as InvestmentController
+    participant Svc as InvestmentServiceImpl
+    participant ConnProvider as SchemaMultiTenantConnectionProvider
+    participant DB as PostgreSQL (investmanDB)
 
-    Component->>Interceptor: Dispatches concurrent requests (forkJoin):<br/>1. GET /api/v1/balance/summary<br/>2. GET /api/v1/balance/assets<br/>3. GET /api/v1/balance/liabilities
+    Component->>Interceptor: Dispatches GET /api/v1/investments
     Interceptor->>Storage: getItem('mio_wealth_auth_token')
     Storage-->>Interceptor: Bearer Token String
-    Interceptor->>Filter: HTTP GET /api/v1/balance/*<br/>Header: Authorization: Bearer <token>
+    Interceptor->>Filter: HTTP GET /api/v1/investments<br/>Header: Authorization: Bearer <token>
 
-    Filter->>Filter: Extracts substring after "Bearer "
     Filter->>JwtProvider: validateToken(token)
-    JwtProvider->>JwtProvider: Verifies HMAC-SHA256 signature & checks exp > now()
     JwtProvider-->>Filter: true (Valid)
+    Filter->>JwtProvider: getTenantFromToken(token)
+    JwtProvider-->>Filter: "tenant_a1b2c3"
+    Filter->>TenantCtx: setTenantId("tenant_a1b2c3")
+    Filter->>Filter: Sets SecurityContextHolder Authentication
 
-    Filter->>JwtProvider: getUsernameFromToken(token)
-    JwtProvider-->>Filter: "alex_smith"
+    Filter->>Ctrl: filterChain.doFilter(...)
+    Ctrl->>Svc: getInvestments() [Zero manual userId parameters!]
 
-    Filter->>SecContext: setAuthentication(UsernamePasswordAuthenticationToken("alex_smith", ROLE_USER))
-    Filter->>Ctrl: Proceeds filterChain.doFilter(request, response)
+    Svc->>ConnProvider: Requests connection for tenant "tenant_a1b2c3"
+    ConnProvider->>DB: SET search_path TO "tenant_a1b2c3", public;
+    Svc->>DB: SELECT * FROM investment
+    DB-->>Svc: List<Investment> records from tenant schema
+    ConnProvider->>DB: SET search_path TO public; (on release)
 
-    Ctrl->>Svc: getBalanceMetrics(userId) -> calls AssetSvc and LiabSvc
-    Svc-->>Ctrl: BalanceMetricsVO(totalAssets: 1795650.0, totalLiabilities: 547340.0, netWorth: 1248310.0)
-    Ctrl-->>Component: HTTP 200 OK (Independent JSON endpoints)
-    Component->>User: Renders Net Worth & Asset/Liability Cards with Currency Pipe
+    Svc-->>Ctrl: List<InvestmentVO>
+    Ctrl-->>Component: HTTP 200 OK (JSON array)
+    Filter->>TenantCtx: clear() [Executed in finally block]
+    Component->>User: Renders Investment holdings table with pure Angular currency formatting
 ```
 
 ---
 
-## 4. Investment Creation & Persistence
+## 4. Investment Full CRUD Workflow
 
-Shows how financial asset transactions are recorded with category classification and UUID generation.
+Illustrates the lifecycle of creating, updating, and deleting investment holdings with modal dialogs, category selection, and toast notifications.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User Browser
+    actor User as User
     participant UI as InvestmentComponent
+    participant Modal as Add/Edit Modal
+    participant DelModal as Delete Modal
+    participant SvcUI as InvestmentService (Angular)
     participant API as InvestmentController
     participant Svc as InvestmentServiceImpl
-    participant UserRepo as UserRepository
-    participant CatRepo as FinancialCategoryRepository
-    participant InvestRepo as InvestmentRepository
-    participant DB as PostgreSQL (investmanDB)
+    participant DB as PostgreSQL (Tenant Schema)
+    participant Toast as ToastService
 
-    User->>UI: Submits new holding (Symbol: INFY, Name: Infosys Ltd, Category: STOCKS, Amount: 75000, Qty: 50)
-    UI->>API: POST /api/v1/investments (InvestmentRequestVO JSON)<br/>Header: Authorization: Bearer <token>
-    API->>API: Extracts Principal ("alex_smith")
-    API->>Svc: createInvestment("alex_smith", request)
+    Note over User,Toast: 1. Create Investment
+    User->>UI: Clicks "+ Add Transaction"
+    UI->>Modal: Opens modal with dynamic category select from CategoryService
+    User->>Modal: Fills Symbol (AAPL), Name, Category (STOCKS), Amount (150000), Qty (10)
+    Modal->>UI: Triggers saveInvestment()
+    UI->>SvcUI: addInvestment(formData) -> returns Observable<InvestmentHolding>
+    SvcUI->>API: POST /api/v1/investments (InvestmentRequestVO)
+    API->>Svc: createInvestment(request)
+    Svc->>DB: INSERT INTO investment (...) VALUES (...)
+    DB-->>Svc: Saved Investment with UUID
+    Svc-->>API: InvestmentVO
+    API-->>SvcUI: HTTP 201 Created
+    SvcUI-->>UI: Observable emits
+    UI->>Toast: showToast("Investment added successfully.", "success")
+    UI->>SvcUI: loadHoldings() re-fetch
 
-    Svc->>UserRepo: findByUserId("alex_smith")
-    UserRepo-->>Svc: User entity
-    Svc->>CatRepo: findById("STOCKS")
-    CatRepo-->>Svc: FinancialCategory entity
+    Note over User,Toast: 2. Update Investment
+    User->>UI: Clicks Edit icon on holding row
+    UI->>Modal: Pre-populates form with current holding data
+    User->>Modal: Modifies amount/quantity and clicks Update
+    UI->>SvcUI: updateInvestment(id, formData)
+    SvcUI->>API: PUT /api/v1/investments/{id}
+    API->>Svc: updateInvestment(id, request)
+    Svc->>DB: UPDATE investment SET ... WHERE id = ?
+    Svc-->>API: Updated InvestmentVO
+    API-->>SvcUI: HTTP 200 OK
+    UI->>Toast: showToast("Investment updated successfully.", "success")
 
-    Svc->>Svc: Instantiates new Investment(symbol: "INFY", category, amount: 75000.0, quantity: 50, tags: "#tech", user)
-    Svc->>InvestRepo: save(investment)
-    InvestRepo->>DB: INSERT INTO investment (investment_id, symbol, asset_name, category_code, amount, quantity, user_id, ...) VALUES (?, ?, ?, ?, ?, ?, ?, ...)
-    DB-->>InvestRepo: Generated UUID v4 (investment_id)
-
-    Svc-->>API: InvestmentVO(id: "UUID", symbol: "INFY", categoryCode: "STOCKS", amount: 75000.0, ...)
-    API-->>UI: HTTP 201 Created (InvestmentVO JSON)
-    UI->>User: Updates UI holdings list reactively with currency pipe formatting
+    Note over User,Toast: 3. Delete Investment (Accessible Modal)
+    User->>UI: Clicks Trash icon on holding row
+    UI->>DelModal: Opens accessible custom delete confirmation modal
+    User->>DelModal: Clicks "Delete" button
+    DelModal->>SvcUI: deleteInvestment(id)
+    SvcUI->>API: DELETE /api/v1/investments/{id}
+    API->>Svc: deleteInvestment(id)
+    Svc->>DB: DELETE FROM investment WHERE id = ?
+    API-->>SvcUI: HTTP 204 No Content
+    UI->>Toast: showToast("Investment removed successfully.", "success")
+    UI->>SvcUI: loadHoldings() re-fetch
 ```
 
 ---
 
-## 5. Token Expiry & Automatic Session Purge
+## 5. Token Expiration & Session Invalidation
 
 Shows the fault-tolerant session termination when a 24-hour token expires.
 
@@ -199,7 +234,7 @@ sequenceDiagram
     Filter->>Filter: SecurityContext remains unauthenticated
     Filter-->>Inbound: HTTP 401 Unauthorized
 
-    Inbound->>Inbound: Detects status === 401 on non-login request
+    Inbound->>Inbound: Detects status === 401 on protected endpoint
     Inbound->>Toast: showToast("Your session has expired. Please sign in again.", "danger")
     Inbound->>AuthSvc: logout()
     AuthSvc->>AuthSvc: sessionStorage.clear()

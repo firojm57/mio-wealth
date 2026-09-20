@@ -1,12 +1,12 @@
-# Security, Authentication & Session Architecture
+# Security, Authentication & Multi-Tenant Session Architecture
 
-This document provides a comprehensive analysis of the security architecture implemented in **Mio Wealth**, covering Spring Security 6, JWT token mechanics, password hashing, stateless sessions, and frontend session recovery.
+This document provides a comprehensive specification of the security architecture implemented in **Mio Wealth**, covering Spring Security 6, JWT token mechanics with embedded tenant claims, password hashing, stateless sessions, and frontend session recovery.
 
 ---
 
-## 1. Spring Security 6 Stateless Filter Chain
+## 1. Spring Security 6 Stateless Filter Chain with Multi-Tenancy
 
-Mio Wealth uses Spring Security 6 configured with **stateless session creation** (`SessionCreationPolicy.STATELESS`). The server does not allocate or maintain HTTP sessions (`HttpSession`) in memory; all authentication state is carried within signed JSON Web Tokens (JWT).
+Mio Wealth uses Spring Security 6 configured with **stateless session creation** (`SessionCreationPolicy.STATELESS`). The server does not maintain server-side HTTP sessions (`HttpSession`) in memory; all authentication state and tenant routing coordinates are carried within signed JSON Web Tokens (JWT).
 
 ```mermaid
 graph TD
@@ -16,8 +16,9 @@ graph TD
 
     JwtF --> TokenCheck{Valid & Non-Expired JWT?}
 
-    TokenCheck -->|Yes| SetContext["SecurityContextHolder.setAuthentication()<br/>Principal: userId, Role: ROLE_USER"]
-    TokenCheck -->|No / Missing| NoAuth["SecurityContextHolder remains anonymous"]
+    TokenCheck -->|Yes| SetTenant["TenantContext.setTenantId(tenantClaim)<br/>Extracts 'tenant' claim from JWT"]
+    SetTenant --> SetContext["SecurityContextHolder.setAuthentication()<br/>Principal: username, Role: ROLE_USER"]
+    TokenCheck -->|No / Missing| NoAuth["TenantContext remains 'public'<br/>SecurityContextHolder remains anonymous"]
 
     SetContext --> AuthFilter["4. AuthorizationFilter<br/>Inspects SecurityContext vs Endpoint Rules"]
     NoAuth --> AuthFilter
@@ -28,7 +29,8 @@ graph TD
     MatchRules -->|Authenticated & Principal Present| Dispatch
     MatchRules -->|Authenticated & Anonymous| Reject401["HTTP 401 Unauthorized Response"]
 
-    Dispatch --> ControllerResponse["Controller Execution & JSON Response"]
+    Dispatch --> ControllerResponse["Controller Execution & Database Query"]
+    ControllerResponse --> FinallyClear["finally { TenantContext.clear(); }<br/>Prevents ThreadLocal Leaks"]
 ```
 
 ---
@@ -40,7 +42,8 @@ graph TD
 * **Token Structure**:
   * **Header**: `{"alg": "HS256", "typ": "JWT"}`
   * **Payload Claims**:
-    * `sub` (Subject): The unique `userId`
+    * `sub` (Subject): The unique `username`
+    * `tenant`: The assigned PostgreSQL schema name (e.g., `tenant_a1b2c3d4...`)
     * `iat` (Issued At): Timestamp of issuance
     * `exp` (Expiration): Issued timestamp + expiration window (Default: 24 hours / `86,400,000 ms`)
   * **Signature**: `HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)`
@@ -52,28 +55,30 @@ sequenceDiagram
     participant AuthCtrl as AuthController
     participant AuthSvc as AuthServiceImpl
     participant JwtProvider as JwtTokenProvider
-    participant ResourceCtrl as Protected Controller (e.g. BalanceController)
+    participant ProtectedCtrl as Protected Controller (e.g. InvestmentController)
+    participant Filter as JwtAuthenticationFilter
+    participant TenantCtx as TenantContext
 
-    Note over Client,ResourceCtrl: Phase 1: Authentication & Token Issuance
-    Client->>AuthCtrl: POST /api/v1/auth/login { userId, password }
+    Note over Client,TenantCtx: Phase 1: Authentication & Token Issuance
+    Client->>AuthCtrl: POST /api/v1/auth/login { username, password }
     AuthCtrl->>AuthSvc: login(request)
-    AuthSvc->>AuthSvc: Verify BCrypt password hash
-    AuthSvc->>JwtProvider: generateToken(userId)
-    JwtProvider-->>AuthSvc: Signed JWT string
-    AuthSvc-->>AuthCtrl: AuthResponseVO(token, userId, profile)
+    AuthSvc->>AuthSvc: Verify BCrypt password against user_login
+    AuthSvc->>JwtProvider: generateToken(username, user.getTenantSchema())
+    JwtProvider-->>AuthSvc: Signed JWT string with 'tenant' claim
+    AuthSvc-->>AuthCtrl: AuthResponseVO(token, username, profile)
     AuthCtrl-->>Client: HTTP 200 OK + JWT Token
     Client->>Client: Stores token in browser sessionStorage
 
-    Note over Client,ResourceCtrl: Phase 2: Authenticated API Access
-    Client->>ResourceCtrl: GET /api/v1/balance<br/>Header: Authorization: Bearer <token>
-    ResourceCtrl->>JwtProvider: validateToken(token)
-    alt Token is Valid
-        JwtProvider-->>ResourceCtrl: true
-        ResourceCtrl-->>Client: HTTP 200 OK (Financial Data)
-    else Token Expired or Invalid Signature
-        JwtProvider-->>ResourceCtrl: Throws ExpiredJwtException
-        ResourceCtrl-->>Client: HTTP 401 Unauthorized
-    end
+    Note over Client,TenantCtx: Phase 2: Authenticated Multi-Tenant Request
+    Client->>Filter: GET /api/v1/investments<br/>Header: Authorization: Bearer <token>
+    Filter->>JwtProvider: validateToken(token)
+    JwtProvider-->>Filter: true
+    Filter->>JwtProvider: getTenantFromToken(token)
+    JwtProvider-->>Filter: "tenant_12345"
+    Filter->>TenantCtx: setTenantId("tenant_12345")
+    Filter->>ProtectedCtrl: Proceeds chain with Authenticated Principal
+    ProtectedCtrl-->>Client: HTTP 200 OK (Isolated tenant data)
+    Filter->>TenantCtx: clear() [In finally block]
 ```
 
 ---
@@ -89,31 +94,19 @@ Declared inside [`SecurityConfiguration.java`](file:///d:/F_Drive/github/mio-wea
 | `/`, `/index.html`, `/favicon.ico` | `GET` | `permitAll()` | Static frontend bootstrapping assets. |
 | `/*.js`, `/*.css`, `/assets/**`, `/static/**` | `GET` | `permitAll()` | Angular compiled JavaScript, styles, fonts, and SVG icons. |
 | `/overview`, `/investments`, `/balance`, `/cash-flow`, `/expenses`, `/performance`, `/goals`, `/settings`, `/login`, `/signup` | `GET` | `permitAll()` | Client-side SPA routes forwarded server-side to `index.html`. |
-| `/api/v1/categories/**` | `GET` | `authenticated()` | Database-backed category catalog partitioned by domain. |
-| `/api/v1/users/**` | `GET` | `authenticated()` | Protected investor user profile (`/profile`). |
-| `/api/v1/investments/**` | `GET`, `POST` | `authenticated()` | Protected user portfolio holdings and investment creation. |
-| `/api/v1/balance/**` | `GET`, `POST`, `DELETE` | `authenticated()` | Protected portfolio summary, assets, liabilities CRUD. |
-| `/api/v1/savings/**`, `/api/v1/portfolio/**` | Any | `authenticated()` | Reserved protected financial calculation endpoints. |
+| `/api/v1/categories/**` | `GET` | `authenticated()` | Database-backed canonical category catalog. |
+| `/api/v1/users/**` | `GET` | `authenticated()` | Protected tenant user profile (`/profile`). |
+| `/api/v1/investments/**` | `GET`, `POST`, `PUT`, `DELETE` | `authenticated()` | Protected tenant portfolio holdings full CRUD. |
+| `/api/v1/balance/**` | `GET`, `POST`, `DELETE` | `authenticated()` | Protected tenant portfolio summary, assets, liabilities CRUD. |
 | Any other request | Any | `authenticated()` | Zero-trust default: all unlisted routes require authentication. |
 
 ---
 
 ## 4. Password Encryption Architecture
 
-Passwords stored in `user_login.password` are protected using **BCrypt** with an adaptive work factor (cost 10).
-
-### Smooth Migration Support in [`AuthServiceImpl.java`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/service/auth/impl/AuthServiceImpl.java#L43-L49):
-```java
-// Supports BCrypt-hashed passwords, while smoothly migrating legacy accounts
-boolean matches = passwordEncoder.matches(request.getPassword(), user.getPassword())
-        || request.getPassword().equals(user.getPassword());
-
-if (!matches) {
-    throw new BadCredentialsException("Invalid user ID or password.");
-}
-```
-* **New accounts**: During registration (`/api/v1/auth/register`), all passwords are encrypted with `passwordEncoder.encode(request.getPassword())` before being persisted.
-* **Legacy accounts**: Existing accounts created before BCrypt migration are recognized, validated, and upgrade-ready without invalidating user passwords.
+Passwords stored in `public.user_login.password` are protected using **BCrypt** with an adaptive work factor (cost 10).
+* During registration (`/api/v1/auth/register`), raw passwords are encrypted with `passwordEncoder.encode(request.getPassword())` before persistence in `public.user_login`.
+* Authentication employs constant-time hash verification via `passwordEncoder.matches(raw, hash)`.
 
 ---
 
@@ -157,4 +150,4 @@ sequenceDiagram
     ErrorInterceptor->>Toast: showToast("Your session has expired. Please sign in again.", "danger")
     Toast-->>User: Displays red financial security alert banner
 ```
-* **Storage Isolation**: Tokens are stored in `sessionStorage` rather than `localStorage`, preventing tokens from persisting indefinitely or being shared across disparate browser windows.
+* **Storage Isolation**: Tokens are stored in `sessionStorage` rather than `localStorage`, preventing tokens from persisting indefinitely or leaking across disparate browser windows.

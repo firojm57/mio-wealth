@@ -8,9 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,13 +23,12 @@ import java.util.Set;
 @Table(name = "user_profile")
 public class UserProfile extends UserAudit {
 
-    public UserProfile(String firstName, String middleName, String lastName, String email, String mobile, User user) {
+    public UserProfile(String firstName, String middleName, String lastName, String email, String mobile) {
         this.firstName = firstName;
         this.middleName = middleName;
         this.lastName = lastName;
         this.email = email;
         this.mobile = mobile;
-        this.user = user;
     }
 
     @Id
@@ -61,8 +58,4 @@ public class UserProfile extends UserAudit {
 
     @Column(name = "profile_picture", length = 255)
     private String profilePicture;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_fk", nullable = false)
-    private User user;
 }

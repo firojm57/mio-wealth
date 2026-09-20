@@ -1,7 +1,6 @@
 package com.greenboard.investman.model.saving;
 
 import com.greenboard.investman.model.category.FinancialCategory;
-import com.greenboard.investman.model.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -53,8 +52,4 @@ public class Saving {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_code", nullable = false)
     private FinancialCategory category;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_fk", nullable = false)
-    private User user;
 }

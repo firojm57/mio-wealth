@@ -19,7 +19,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "financial_category")
+@Table(name = "financial_category", schema = "public")
 public class FinancialCategory {
 
     @Id

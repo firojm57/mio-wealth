@@ -5,6 +5,6 @@ import com.greenboard.investman.vo.balance.AssetItemVO;
 import java.util.List;
 
 public interface AssetService {
-    List<AssetItemVO> getAssetsForUser(String userId);
-    double calculateTotalAssets(String userId);
+    List<AssetItemVO> getAssets();
+    double calculateTotalAssets();
 }

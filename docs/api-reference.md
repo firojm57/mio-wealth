@@ -1,13 +1,13 @@
 # REST API Specification & Contract Reference
 
-This document provides the authoritative API specification for all REST endpoints exposed by the **Mio Wealth** backend server. All payloads adhere to Clean Code principles: zero UI formatting (no icons, currency signs, or artificial booleans) and strictly typed raw numeric and UUID values.
+This document provides the authoritative API specification for all REST endpoints exposed by the **Mio Wealth** backend server. All payloads adhere to Clean Code principles: zero UI formatting (no currency symbols or artificial display strings) and strictly typed raw numeric and UUID values with automatic tenant schema routing.
 
 ---
 
 ## 1. Authentication Endpoints
 
 ### 1.1 User Self-Registration
-Creates a new user account with an auto-generated UUID and initializes the personal profile.
+Creates a master login account, assigns a cryptographically unique tenant schema, provisions the isolated schema using Flyway, and seeds the tenant profile.
 
 * **Method**: `POST`
 * **Path**: `/api/v1/auth/register`
@@ -18,7 +18,7 @@ Creates a new user account with an auto-generated UUID and initializes the perso
 #### Request Body ([`UserRegisterVO`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/vo/auth/UserRegisterVO.java)):
 ```json
 {
-  "userId": "alex_smith",
+  "username": "alex_smith",
   "password": "SecurePassword123!",
   "firstName": "Alex",
   "middleName": "J",
@@ -30,13 +30,13 @@ Creates a new user account with an auto-generated UUID and initializes the perso
 
 | Field | Type | Required | Validation Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `userId` | `String` | Yes | `@NotBlank` | Unique account login username. |
+| `username` | `String` | Yes | `@NotBlank` | Unique account login username. |
 | `password` | `String` | Yes | `@NotBlank`, min 6 chars | Raw password to be BCrypt encrypted. |
 | `firstName` | `String` | Yes | `@NotBlank` | Investor's given name. |
 | `middleName`| `String` | No | Optional | Investor's middle name. |
 | `lastName` | `String` | Yes | `@NotBlank` | Investor's surname. |
-| `email` | `String` | Yes | `@NotBlank`, `@Email` | Valid email format. |
-| `mobile` | `String` | No | Optional | Phone number. |
+| `email` | `String` | Yes | `@NotBlank`, `@Email` | Valid email address. |
+| `mobile` | `String` | No | Optional | Telephone number. |
 
 #### Responses:
 * **HTTP 201 Created**:
@@ -52,7 +52,7 @@ Creates a new user account with an auto-generated UUID and initializes the perso
     "timestamp": "2026-09-20T10:00:00",
     "status": 400,
     "error": "Bad Request",
-    "message": "User ID already exists.",
+    "message": "Username already exists.",
     "path": "/api/v1/auth/register"
   }
   ```
@@ -60,7 +60,7 @@ Creates a new user account with an auto-generated UUID and initializes the perso
 ---
 
 ### 1.2 User Sign In / Token Generation
-Validates user credentials and generates a signed 24-hour JWT Bearer token.
+Validates user credentials against `public.user_login` and returns a signed 24-hour JWT Bearer token containing the user identity and assigned `tenant` schema claim.
 
 * **Method**: `POST`
 * **Path**: `/api/v1/auth/login`
@@ -71,7 +71,7 @@ Validates user credentials and generates a signed 24-hour JWT Bearer token.
 #### Request Body ([`AuthRequestVO`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/vo/auth/AuthRequestVO.java)):
 ```json
 {
-  "userId": "alex_smith",
+  "username": "alex_smith",
   "password": "SecurePassword123!"
 }
 ```
@@ -80,7 +80,7 @@ Validates user credentials and generates a signed 24-hour JWT Bearer token.
 * **HTTP 200 OK**:
   ```json
   {
-    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGV4X3NtaXRoIiwiaWF0IjoxNzI2NzQ1NjAwLCJleHAiOjE3MjY4MzIwMDB9...",
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhbGV4X3NtaXRoIiwidGVuYW50IjoidGVuYW50X2ExYjJjM2Q0Li4uIn0...",
     "tokenType": "Bearer",
     "userId": "alex_smith",
     "userProfile": {
@@ -99,7 +99,7 @@ Validates user credentials and generates a signed 24-hour JWT Bearer token.
 ## 2. Category Catalog Endpoints
 
 ### 2.1 Get Categories by Domain
-Retrieves the database-backed categories partitioned by macro domain (`INVESTMENT`, `SAVING`, `EXPENSE`, `LIABILITY`).
+Retrieves canonical master categories from `public.financial_category`, optionally filtered by domain (`INVESTMENT`, `SAVING`, `EXPENSE`, `LIABILITY`).
 
 * **Method**: `GET`
 * **Path**: `/api/v1/categories?domain={INVESTMENT|SAVING|EXPENSE|LIABILITY}`
@@ -130,7 +130,7 @@ Retrieves the database-backed categories partitioned by macro domain (`INVESTMEN
 ## 3. Financial Portfolio Endpoints
 
 ### 3.1 Get Lightweight Portfolio Summary
-Returns top-level balance sheet metrics without loading heavy itemized lists. Ideal for dashboard widgets.
+Returns top-level balance sheet metrics from the tenant's schema without loading large itemized collections.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/balance/summary`
@@ -151,7 +151,7 @@ Returns top-level balance sheet metrics without loading heavy itemized lists. Id
 ---
 
 ### 3.2 Get Assets Breakdown
-Retrieves all asset holdings aggregated from investments and liquid savings with pure numeric values.
+Retrieves all asset holdings aggregated from the tenant's investments and liquid savings with pure numeric values.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/balance/assets`
@@ -172,17 +172,6 @@ Retrieves all asset holdings aggregated from investments and liquid savings with
       "changeRate": 6.4,
       "tags": "#retirement #equity",
       "updatedAt": "2026-09-20T10:30:00"
-    },
-    {
-      "id": "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
-      "name": "HDFC Savings Account",
-      "categoryCode": "SAVINGS_ACCOUNT",
-      "categoryName": "Savings Account",
-      "domain": "SAVING",
-      "value": 120150.0,
-      "changeRate": 1.2,
-      "tags": "#emergency_fund",
-      "updatedAt": "2026-09-20T10:30:00"
     }
   ]
   ```
@@ -190,7 +179,7 @@ Retrieves all asset holdings aggregated from investments and liquid savings with
 ---
 
 ### 3.3 Get Liabilities Breakdown
-Retrieves user debt obligations.
+Retrieves user debt obligations from the tenant's schema.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/balance/liabilities`
@@ -218,7 +207,7 @@ Retrieves user debt obligations.
 ---
 
 ### 3.4 Create Liability
-Adds a new liability or debt obligation.
+Adds a new liability or loan obligation to the tenant schema.
 
 * **Method**: `POST`
 * **Path**: `/api/v1/balance/liabilities`
@@ -243,7 +232,7 @@ Adds a new liability or debt obligation.
 ---
 
 ### 3.5 Delete Liability
-Deletes a liability obligation by its UUID.
+Deletes a liability obligation by its UUID from the tenant schema.
 
 * **Method**: `DELETE`
 * **Path**: `/api/v1/balance/liabilities/{id}`
@@ -254,8 +243,8 @@ Deletes a liability obligation by its UUID.
 
 ---
 
-### 3.6 Composite Balance Endpoint (Compatibility)
-Composite endpoint returning summary, assets, and liabilities in a single call.
+### 3.6 Composite Balance Endpoint
+Returns summary metrics, assets, and liabilities combined in a single response.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/balance`
@@ -264,10 +253,10 @@ Composite endpoint returning summary, assets, and liabilities in a single call.
 
 ---
 
-## 4. Investment Endpoints
+## 4. Investment Endpoints (Full CRUD)
 
-### 4.1 List User Investments
-Retrieves all asset holdings for the currently authenticated investor with normalized category code and raw numbers.
+### 4.1 List Tenant Investments
+Retrieves all asset holdings for the active tenant.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/investments`
@@ -280,26 +269,40 @@ Retrieves all asset holdings for the currently authenticated investor with norma
   [
     {
       "id": "c4d5e6f7-a8b9-4c3d-0e4f-5a6b7c8d9e0f",
-      "symbol": "VTI",
-      "name": "Vanguard Total Stock ETF",
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
       "domain": "INVESTMENT",
-      "categoryCode": "MUTUAL_FUNDS",
-      "categoryName": "Mutual Funds & ETFs",
-      "amount": 91140.0,
-      "quantity": 350,
-      "unitPrice": 260.40,
-      "returnRate": 14.2,
-      "tags": "#retirement",
+      "categoryCode": "STOCKS",
+      "categoryName": "Direct Equities / Stocks",
+      "amount": 150000.0,
+      "quantity": 10,
+      "unitPrice": 15000.0,
+      "returnRate": 0.0,
+      "tags": "TECH, LONG_TERM",
       "action": "BUY",
-      "investmentDate": "2026-09-20T10:00:00"
+      "investmentDate": "2026-09-20T14:30:00"
     }
   ]
   ```
 
 ---
 
-### 4.2 Create Investment Holding
-Records a new financial holding associated with the current user.
+### 4.2 Get Investment by ID
+Retrieves a single investment holding by its UUID.
+
+* **Method**: `GET`
+* **Path**: `/api/v1/investments/{id}`
+* **Authentication**: `Bearer <JWT_TOKEN>` (`Authenticated`)
+* **Produces**: `application/json`
+
+#### Responses:
+* **HTTP 200 OK**: Returns [`InvestmentVO`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/vo/investment/InvestmentVO.java).
+* **HTTP 400 Bad Request**: If investment does not exist in the tenant schema.
+
+---
+
+### 4.3 Create Investment
+Records a new investment holding within the active tenant schema.
 
 * **Method**: `POST`
 * **Path**: `/api/v1/investments`
@@ -317,7 +320,7 @@ Records a new financial holding associated with the current user.
   "quantity": 50,
   "unitPrice": 1500.0,
   "remarks": "Long-term tech holding",
-  "tags": "#tech #equity",
+  "tags": "TECH, EQUITY",
   "action": "BUY"
 }
 ```
@@ -327,10 +330,38 @@ Records a new financial holding associated with the current user.
 
 ---
 
+### 4.4 Update Investment
+Updates an existing investment holding by UUID within the active tenant schema.
+
+* **Method**: `PUT`
+* **Path**: `/api/v1/investments/{id}`
+* **Authentication**: `Bearer <JWT_TOKEN>` (`Authenticated`)
+* **Consumes**: `application/json`
+* **Produces**: `application/json`
+
+#### Request Body: Same as `InvestmentRequestVO`.
+
+#### Responses:
+* **HTTP 200 OK**: Returns updated [`InvestmentVO`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/vo/investment/InvestmentVO.java).
+
+---
+
+### 4.5 Delete Investment
+Permanently removes an investment holding by UUID from the active tenant schema.
+
+* **Method**: `DELETE`
+* **Path**: `/api/v1/investments/{id}`
+* **Authentication**: `Bearer <JWT_TOKEN>` (`Authenticated`)
+
+#### Responses:
+* **HTTP 204 No Content**: Deleted successfully.
+
+---
+
 ## 5. User Profile Endpoints
 
 ### 5.1 Get Current User Profile
-Retrieves the profile information for the currently authenticated investor based on the verified JWT identity.
+Retrieves the profile information for the active tenant from `tenant_<uuid>.user_profile`.
 
 * **Method**: `GET`
 * **Path**: `/api/v1/users/profile`

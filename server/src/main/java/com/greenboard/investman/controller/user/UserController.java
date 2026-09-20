@@ -2,6 +2,10 @@ package com.greenboard.investman.controller.user;
 
 import com.greenboard.investman.service.user.UserProfileService;
 import com.greenboard.investman.vo.user.UserProfileVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,6 +18,7 @@ import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@Tag(name = "5. User Profile", description = "Tenant investor profile and personal information")
 public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -25,6 +30,12 @@ public class UserController {
     }
 
     @GetMapping("/profile")
+    @Operation(summary = "Get Current User Profile", description = "Retrieves personal profile details for the authenticated user from their isolated tenant schema.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User profile retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Profile not found")
+    })
     public ResponseEntity<UserProfileVO> getCurrentUserProfile(Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

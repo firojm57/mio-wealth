@@ -1,39 +1,40 @@
 # Database Schema & Persistence Specification
 
-This document provides the authoritative, field-by-field specification of the relational database schema, entity relationships, constraints, indexes, UUID primary keys, JPA auditing lifecycle, and Flyway migration architecture for **Mio Wealth**.
+This document provides the authoritative, field-by-field specification of the relational database schema, entity relationships, Schema-per-Tenant isolation, constraints, indexes, UUID primary keys, and Flyway migration architecture for **Mio Wealth**.
 
 ---
 
-## 1. Entity-Relationship (ER) Diagram
+## 1. Schema-per-Tenant Database Topology
+
+Mio Wealth uses an enterprise **Schema-per-Tenant** architecture in PostgreSQL. Global authentication and the master catalog are stored in the shared `public` schema, while each user's financial domain data is completely isolated within a dedicated tenant schema.
 
 ```mermaid
 erDiagram
-    user_login ||--o| user_profile : "has profile (1:1)"
-    user_profile ||--o{ user_address : "has addresses (1:N)"
-    user_login ||--o{ investment : "owns investments (1:N)"
-    user_login ||--o{ saving : "owns savings (1:N)"
-    user_login ||--o{ liability : "owes liabilities (1:N)"
-    user_login ||--o{ expense : "incurs expenses (1:N)"
+    %% Master Public Schema
+    public_user_login {
+        varchar(36) user_id PK "UUID v4 Primary Key"
+        varchar(100) username UK "Unique Account Username"
+        varchar(255) password "BCrypt Encrypted Hash"
+        varchar(64) tenant_schema UK "Dedicated Schema Name (tenant_<uuid>)"
+        varchar(50) role "Security Role (ROLE_USER)"
+        timestamp created_at "Account Creation Timestamp"
+    }
 
-    financial_category ||--o{ investment : "classifies (1:N)"
-    financial_category ||--o{ saving : "classifies (1:N)"
-    financial_category ||--o{ liability : "classifies (1:N)"
-    financial_category ||--o{ expense : "classifies (1:N)"
-
-    financial_category {
+    public_financial_category {
         varchar(50) code PK "Natural Primary Key (e.g. STOCKS, PF, HOME_LOAN)"
         varchar(20) domain "Domain Enum (INVESTMENT, SAVING, EXPENSE, LIABILITY)"
         varchar(100) name "Human-readable Display Name"
         varchar(255) description "Catalog Description"
     }
 
-    user_login {
-        varchar(36) user_id PK "UUID v4 Account Primary Key"
-        varchar(100) username UK "Unique Account Login Name"
-        varchar(255) password "BCrypt Encrypted Hash"
-    }
+    %% Tenant Schema Entities
+    tenant_user_profile ||--o{ tenant_user_address : "has addresses (1:N)"
+    public_financial_category ||--o{ tenant_investment : "classifies"
+    public_financial_category ||--o{ tenant_saving : "classifies"
+    public_financial_category ||--o{ tenant_liability : "classifies"
+    public_financial_category ||--o{ tenant_expense : "classifies"
 
-    user_profile {
+    tenant_user_profile {
         varchar(36) user_profile_id PK "UUID v4 Surrogate ID"
         varchar(100) first_name "Required First Name"
         varchar(100) middle_name "Optional Middle Name"
@@ -41,81 +42,77 @@ erDiagram
         varchar(150) email_id "Email Address"
         varchar(30) mobile_number "Phone Number"
         varchar(255) profile_picture "Avatar URL / Path"
-        varchar(36) user_id FK "Unique Foreign Key to user_login"
         timestamp created_on "Audit Creation Timestamp"
         timestamp updated_on "Audit Last Modified Timestamp"
         timestamp last_login "Audit Last Login Timestamp"
     }
 
-    user_address {
+    tenant_user_address {
         varchar(36) address_id PK "UUID v4 Primary Key"
+        varchar(36) user_profile_id FK "Foreign Key to user_profile"
         varchar(255) line1 "Street Address Line 1"
         varchar(255) line2 "Apartment / Suite"
         varchar(100) city "City"
         varchar(100) state "State / Province"
         varchar(100) country "Country"
         varchar(20) postal_code "ZIP / Postal Code"
-        varchar(36) user_profile_id FK "Foreign Key to user_profile"
     }
 
-    investment {
-        varchar(36) investment_id PK "UUID v4 Primary Key"
-        varchar(36) user_id FK "Foreign Key to user_login"
-        varchar(50) category_code FK "Foreign Key to financial_category"
-        varchar(50) symbol "Ticker / Code (e.g. VTI, AAPL)"
-        varchar(150) asset_name "Descriptive Name"
+    tenant_investment {
+        varchar(36) id PK "UUID v4 Primary Key"
+        varchar(30) symbol "Ticker / Code (e.g. AAPL, VTI, INFY)"
+        varchar(150) asset_name "Descriptive Holding Name"
+        varchar(50) category_code FK "Foreign Key to public.financial_category"
         double_precision amount "Total Valuation or Invested Principal"
-        int quantity "Number of Units / Shares"
+        int quantity "Units / Shares Count"
         double_precision unit_price "Purchase / Market Unit Price"
-        timestamp investment_date "Transaction Date"
-        varchar(50) action "BUY / SELL / HOLD"
-        varchar(255) remarks "Notes or Context"
-        varchar(255) tags "Tax & Planning Tags (e.g. #80C, #retirement)"
+        timestamp investment_date "Transaction Timestamp"
+        varchar(50) action "Portfolio Action (BUY, SELL, HOLD)"
+        varchar(255) remarks "Notes or Description"
+        varchar(255) tags "Tax & Categorization Tags"
     }
 
-    saving {
-        varchar(36) saving_id PK "UUID v4 Primary Key"
-        varchar(36) user_id FK "Foreign Key to user_login"
-        varchar(50) category_code FK "Foreign Key to financial_category"
+    tenant_saving {
+        varchar(36) id PK "UUID v4 Primary Key"
         varchar(150) institution_name "Bank / Fund Provider Name"
-        varchar(50) account_number "Masked Account Number"
+        varchar(50) category_code FK "Foreign Key to public.financial_category"
         double_precision amount "Liquid Savings Balance"
         timestamp saving_date "Date Recorded"
-        varchar(50) action "DEPOSIT / WITHDRAW"
+        varchar(50) account_number "Masked Account Identifier"
         varchar(255) remarks "Deposit Description"
         varchar(255) tags "Categorization Tags"
+        varchar(50) action "DEPOSIT / WITHDRAW"
     }
 
-    liability {
-        varchar(36) liability_id PK "UUID v4 Primary Key"
-        varchar(36) user_id FK "Foreign Key to user_login"
-        varchar(50) category_code FK "Foreign Key to financial_category"
-        varchar(150) name "Debt / Loan Name"
+    tenant_liability {
+        varchar(36) id PK "UUID v4 Primary Key"
+        varchar(150) name "Debt / Loan Label"
+        varchar(50) category_code FK "Foreign Key to public.financial_category"
         double_precision amount "Outstanding Balance"
         double_precision interest_rate "Annual Percentage Rate (APR %)"
-        timestamp created_at "Creation Date"
-        varchar(255) tags "Debt Tags (e.g. #tax_deductible)"
+        timestamp created_at "Creation Timestamp"
+        varchar(255) tags "Planning Tags"
     }
 
-    expense {
-        varchar(36) expense_id PK "UUID v4 Primary Key"
-        varchar(36) user_id FK "Foreign Key to user_login"
-        varchar(50) category_code FK "Foreign Key to financial_category"
+    tenant_expense {
+        varchar(36) id PK "UUID v4 Primary Key"
         varchar(150) title "Expense Description"
+        varchar(50) category_code FK "Foreign Key to public.financial_category"
         double_precision amount "Expenditure Amount"
-        timestamp expense_date "Date of Expense"
-        varchar(50) payment_method "UPI / CREDIT_CARD / CASH"
+        timestamp expense_date "Transaction Date"
+        varchar(50) payment_method "Payment Channel (UPI, CARD, CASH)"
         varchar(255) tags "Expense Tags"
     }
 ```
 
 ---
 
-## 2. Table-by-Table Schema Specification
+## 2. Shared Master Schema (`public`)
 
-### 2.1 `financial_category`
-Represents the unified category catalog for all four financial domains (`INVESTMENT`, `SAVING`, `EXPENSE`, `LIABILITY`). Uses a clean natural primary key.
+### 2.1 `public.financial_category`
+Represents the global canonical catalog for all four financial domains (`INVESTMENT`, `SAVING`, `EXPENSE`, `LIABILITY`). Uses a natural primary key.
 * **JPA Entity**: [`com.greenboard.investman.model.category.FinancialCategory`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/category/FinancialCategory.java)
+* **Table Declaration**: `@Table(name = "financial_category", schema = "public")`
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -124,7 +121,7 @@ Represents the unified category catalog for all four financial domains (`INVESTM
 | `name` | `VARCHAR(100)` | `NOT NULL` | — | Human-readable display label. |
 | `description` | `VARCHAR(255)` | `NULL` | — | Detailed classification summary. |
 
-**Pre-Seeded Catalog Data**:
+**Pre-Seeded Master Catalog Data**:
 - **INVESTMENT**: `STOCKS`, `MUTUAL_FUNDS`, `REAL_ESTATE`, `FIXED_DEPOSIT`, `CRYPTO`, `GOLD`, `BONDS`
 - **SAVING**: `PF`, `PPF`, `SSY`, `SAVINGS_ACCOUNT`, `RECURRING_DEPOSIT`, `NPS`
 - **EXPENSE**: `GROCERY`, `UTILITIES`, `HOUSING`, `TRANSPORT`, `HEALTHCARE`, `ENTERTAINMENT`, `EDUCATION`, `MISCELLANEOUS`
@@ -132,20 +129,28 @@ Represents the unified category catalog for all four financial domains (`INVESTM
 
 ---
 
-### 2.2 `user_login`
-Represents authentication credentials. Uses UUID v4 auto-generated identifier.
+### 2.2 `public.user_login`
+Represents authentication credentials and tenant routing assignments.
 * **JPA Entity**: [`com.greenboard.investman.model.user.User`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/user/User.java)
+* **Table Declaration**: `@Table(name = "user_login", schema = "public")`
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `user_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
-| `username` | `VARCHAR(100)` | `NOT NULL` | `UNIQUE` | Unique user account login name. |
+| `username` | `VARCHAR(100)` | `NOT NULL` | `UNIQUE` | Unique account login username. |
 | `password` | `VARCHAR(255)` | `NOT NULL` | — | BCrypt-hashed password string. |
+| `tenant_schema` | `VARCHAR(64)` | `NOT NULL` | `UNIQUE` | Assigned schema name (e.g., `tenant_<uuid>`). |
+| `role` | `VARCHAR(50)` | `NOT NULL` | `DEFAULT 'ROLE_USER'` | User authorization role. |
+| `created_at` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Account registration timestamp. |
 
 ---
 
-### 2.3 `user_profile`
-Stores personal and biographical details. Inherits audit fields from [`UserAudit`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/common/UserAudit.java).
+## 3. Tenant-Specific Schema Specification (`tenant_<uuid>`)
+
+Each tenant schema houses isolated user records completely devoid of `user_id` foreign keys.
+
+### 3.1 `user_profile`
+Stores personal details for the tenant account holder.
 * **JPA Entity**: [`com.greenboard.investman.model.user.UserProfile`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/user/UserProfile.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
@@ -157,123 +162,121 @@ Stores personal and biographical details. Inherits audit fields from [`UserAudit
 | `email_id` | `VARCHAR(150)` | `NOT NULL` | — | Primary contact email address. |
 | `mobile_number` | `VARCHAR(30)` | `NULL` | — | Telephone number. |
 | `profile_picture`| `VARCHAR(255)` | `NULL` | — | Profile avatar URL or storage path. |
-| `user_id` | `VARCHAR(36)` | `NULL` | `UNIQUE`, `FK (user_login)` | Foreign key linking 1:1 to `user_login`. |
-| `created_on` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Profile creation timestamp. |
+| `created_on` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp. |
 | `updated_on` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Last profile update timestamp. |
-| `last_login` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Most recent authentication timestamp. |
-
-* **Foreign Key**: `CONSTRAINT fk_user_profile_user FOREIGN KEY (user_id) REFERENCES user_login(user_id) ON DELETE CASCADE`
+| `last_login` | `TIMESTAMP` | `NOT NULL` | `DEFAULT CURRENT_TIMESTAMP` | Most recent login timestamp. |
 
 ---
 
-### 2.4 `user_address`
-Stores physical mailing, residential, or billing addresses.
+### 3.2 `user_address`
+Stores physical residential or billing addresses for the tenant.
 * **JPA Entity**: [`com.greenboard.investman.model.user.Address`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/user/Address.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `address_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
+| `user_profile_id`| `VARCHAR(36)` | `NOT NULL` | `FK (user_profile)` | Foreign key to `user_profile`. |
 | `line1` | `VARCHAR(255)` | `NULL` | — | Primary street address line. |
 | `line2` | `VARCHAR(255)` | `NULL` | — | Suite, apartment, or flat number. |
 | `city` | `VARCHAR(100)` | `NULL` | — | Municipality / city. |
 | `state` | `VARCHAR(100)` | `NULL` | — | State or province. |
 | `country` | `VARCHAR(100)` | `NULL` | — | Country name or ISO code. |
 | `postal_code` | `VARCHAR(20)` | `NULL` | — | Postal / ZIP code. |
-| `user_profile_id`| `VARCHAR(36)` | `NULL` | `FK (user_profile)` | Owning user profile UUID. |
 
 * **Foreign Key**: `CONSTRAINT fk_user_address_profile FOREIGN KEY (user_profile_id) REFERENCES user_profile(user_profile_id) ON DELETE CASCADE`
 
 ---
 
-### 2.5 `investment`
-Tracks portfolio assets, holdings, equities, bonds, and real estate allocations.
+### 3.3 `investment`
+Stores portfolio holdings, equities, funds, real estate, and bonds owned by the tenant.
 * **JPA Entity**: [`com.greenboard.investman.model.investment.Investment`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/investment/Investment.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `investment_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
-| `user_id` | `VARCHAR(36)` | `NOT NULL` | `FK (user_login)` | Owning user UUID. |
-| `category_code` | `VARCHAR(50)` | `NULL` | `FK (financial_category)` | Link to category (e.g. `STOCKS`). |
-| `symbol` | `VARCHAR(50)` | `NULL` | — | Asset ticker or code (e.g., `VTI`, `INFY`). |
-| `asset_name` | `VARCHAR(150)` | `NULL` | — | Descriptive holding name. |
-| `amount` | `DOUBLE PRECISION`| `NULL` | `DEFAULT 0.0` | Total monetary valuation or cost basis. |
-| `quantity` | `INT` | `NULL` | `DEFAULT 0` | Share count, token count, or units held. |
-| `unit_price` | `DOUBLE PRECISION`| `NULL` | `DEFAULT 0.0` | Purchase or current unit price. |
-| `investment_date`| `TIMESTAMP` | `NULL` | — | Timestamp when transaction was recorded. |
-| `action` | `VARCHAR(50)` | `NULL` | — | Portfolio action (`BUY`, `SELL`, `HOLD`). |
+| `id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
+| `symbol` | `VARCHAR(30)` | `NOT NULL` | — | Asset ticker or code (e.g., `AAPL`, `INFY`, `VTI`). |
+| `asset_name` | `VARCHAR(150)` | `NOT NULL` | — | Descriptive holding name. |
+| `category_code` | `VARCHAR(50)` | `NOT NULL` | `FK (public.financial_category)` | Link to canonical category. |
+| `amount` | `DOUBLE PRECISION`| `NOT NULL` | — | Total monetary valuation or cost basis. |
+| `quantity` | `INT` | `NOT NULL` | — | Units / shares held. |
+| `unit_price` | `DOUBLE PRECISION`| `NOT NULL` | — | Purchase or unit price. |
+| `investment_date`| `TIMESTAMP` | `NOT NULL` | — | Date and time recorded. |
 | `remarks` | `VARCHAR(255)` | `NULL` | — | Optional notes or annotations. |
-| `tags` | `VARCHAR(255)` | `NULL` | — | Search/tax tags (e.g. `#80C`, `#equity`). |
+| `tags` | `VARCHAR(255)` | `NULL` | — | Categorization tags (e.g. `#tech`, `#equity`). |
+| `action` | `VARCHAR(50)` | `NOT NULL` | `DEFAULT 'BUY'` | Portfolio action (`BUY`, `SELL`). |
 
-* **Foreign Keys**:
-  - `CONSTRAINT fk_investment_user FOREIGN KEY (user_id) REFERENCES user_login(user_id) ON DELETE CASCADE`
-  - `CONSTRAINT fk_investment_category FOREIGN KEY (category_code) REFERENCES financial_category(code) ON DELETE SET NULL`
+* **Foreign Key**: `CONSTRAINT fk_investment_category FOREIGN KEY (category_code) REFERENCES public.financial_category(code)`
 
 ---
 
-### 2.6 `saving`
+### 3.4 `saving`
 Tracks liquid cash, bank deposits, provident funds, and emergency balances.
 * **JPA Entity**: [`com.greenboard.investman.model.saving.Saving`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/saving/Saving.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `saving_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
-| `user_id` | `VARCHAR(36)` | `NOT NULL` | `FK (user_login)` | Owning user UUID. |
-| `category_code` | `VARCHAR(50)` | `NULL` | `FK (financial_category)` | Link to category (e.g. `PF`, `PPF`). |
-| `institution_name`| `VARCHAR(150)`| `NULL` | — | Bank or financial institution name. |
-| `account_number` | `VARCHAR(50)` | `NULL` | — | Account reference or masked digits. |
-| `amount` | `DOUBLE PRECISION`| `NULL` | `DEFAULT 0.0` | Liquid balance amount. |
-| `saving_date` | `TIMESTAMP` | `NULL` | — | Date recorded. |
-| `action` | `VARCHAR(50)` | `NULL` | — | Action (`DEPOSIT`, `WITHDRAW`). |
+| `id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
+| `institution_name`| `VARCHAR(150)`| `NOT NULL` | — | Bank or financial institution name. |
+| `category_code` | `VARCHAR(50)` | `NOT NULL` | `FK (public.financial_category)` | Link to category (e.g. `PF`, `SAVINGS_ACCOUNT`). |
+| `amount` | `DOUBLE PRECISION`| `NOT NULL` | — | Liquid balance amount. |
+| `saving_date` | `TIMESTAMP` | `NOT NULL` | — | Date recorded. |
+| `account_number` | `VARCHAR(50)` | `NULL` | — | Masked account reference. |
 | `remarks` | `VARCHAR(255)` | `NULL` | — | Notes or deposit context. |
-| `tags` | `VARCHAR(255)` | `NULL` | — | Categorization tags (e.g. `#emergency`). |
+| `tags` | `VARCHAR(255)` | `NULL` | — | Categorization tags. |
+| `action` | `VARCHAR(50)` | `NOT NULL` | `DEFAULT 'DEPOSIT'` | Action (`DEPOSIT`, `WITHDRAW`). |
 
-* **Foreign Keys**:
-  - `CONSTRAINT fk_saving_user FOREIGN KEY (user_id) REFERENCES user_login(user_id) ON DELETE CASCADE`
-  - `CONSTRAINT fk_saving_category FOREIGN KEY (category_code) REFERENCES financial_category(code) ON DELETE SET NULL`
+* **Foreign Key**: `CONSTRAINT fk_saving_category FOREIGN KEY (category_code) REFERENCES public.financial_category(code)`
 
 ---
 
-### 2.7 `liability`
-Tracks user debt obligations, mortgages, vehicle loans, and credit card balances.
+### 3.5 `liability`
+Tracks debt obligations, mortgages, vehicle loans, and credit card balances.
 * **JPA Entity**: [`com.greenboard.investman.model.liability.Liability`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/liability/Liability.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `liability_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
-| `user_id` | `VARCHAR(36)` | `NOT NULL` | `FK (user_login)` | Owning debtor user UUID. |
-| `category_code` | `VARCHAR(50)` | `NULL` | `FK (financial_category)` | Link to category (e.g. `HOME_LOAN`). |
+| `id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
 | `name` | `VARCHAR(150)` | `NOT NULL` | — | Liability or loan label. |
-| `amount` | `DOUBLE PRECISION`| `NOT NULL` | `DEFAULT 0.0` | Outstanding balance amount. |
+| `category_code` | `VARCHAR(50)` | `NOT NULL` | `FK (public.financial_category)` | Link to category (e.g. `HOME_LOAN`). |
+| `amount` | `DOUBLE PRECISION`| `NOT NULL` | — | Outstanding balance amount. |
 | `interest_rate`| `DOUBLE PRECISION`| `NULL` | `DEFAULT 0.0` | Annual interest rate (APR %). |
-| `created_at` | `TIMESTAMP` | `NULL` | — | Creation timestamp. |
+| `created_at` | `TIMESTAMP` | `NOT NULL` | — | Creation timestamp. |
 | `tags` | `VARCHAR(255)` | `NULL` | — | Planning tags (e.g. `#tax_deductible`). |
 
-* **Foreign Keys**:
-  - `CONSTRAINT fk_liability_user FOREIGN KEY (user_id) REFERENCES user_login(user_id) ON DELETE CASCADE`
-  - `CONSTRAINT fk_liability_category FOREIGN KEY (category_code) REFERENCES financial_category(code) ON DELETE SET NULL`
+* **Foreign Key**: `CONSTRAINT fk_liability_category FOREIGN KEY (category_code) REFERENCES public.financial_category(code)`
 
 ---
 
-### 2.8 `expense`
+### 3.6 `expense`
 Tracks recurring and ad-hoc expenditures.
 * **JPA Entity**: [`com.greenboard.investman.model.expense.Expense`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/model/expense/Expense.java)
 
 | Column | SQL Type | Modifiers | Constraints | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `expense_id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
-| `user_id` | `VARCHAR(36)` | `NOT NULL` | `FK (user_login)` | Owning user UUID. |
-| `category_code` | `VARCHAR(50)` | `NULL` | `FK (financial_category)` | Link to category (e.g. `GROCERY`). |
+| `id` | `VARCHAR(36)` | `NOT NULL` | `PRIMARY KEY` | Auto-generated UUID v4 key. |
 | `title` | `VARCHAR(150)` | `NOT NULL` | — | Expense label. |
-| `amount` | `DOUBLE PRECISION`| `NOT NULL` | `DEFAULT 0.0` | Outflow expenditure. |
-| `expense_date` | `TIMESTAMP` | `NULL` | — | Date of transaction. |
+| `category_code` | `VARCHAR(50)` | `NOT NULL` | `FK (public.financial_category)` | Link to category (e.g. `GROCERY`). |
+| `amount` | `DOUBLE PRECISION`| `NOT NULL` | — | Outflow expenditure. |
+| `expense_date` | `TIMESTAMP` | `NOT NULL` | — | Date of transaction. |
 | `payment_method`| `VARCHAR(50)` | `NULL` | — | Payment channel (`UPI`, `CARD`, `CASH`). |
 | `tags` | `VARCHAR(255)` | `NULL` | — | Budget tags. |
 
+* **Foreign Key**: `CONSTRAINT fk_expense_category FOREIGN KEY (category_code) REFERENCES public.financial_category(code)`
+
 ---
 
-## 3. Flyway Migration Versioning
+## 4. Multi-Tier Flyway Migration Architecture
 
-Database evolution is managed exclusively via **Flyway**.
-* Migration location: `server/src/main/resources/db/migration/`
-* Baseline schema file: [`V1__init_schema.sql`](file:///d:/F_Drive/github/mio-wealth/server/src/main/resources/db/migration/V1__init_schema.sql)
-* Hibernate DDL Auto is locked to `validate` in production to eliminate unsafe runtime schema mutations.
+Database evolution is structured into shared and tenant-scoped migration paths:
+
+1. **Shared Master Migration**:
+   - Path: `server/src/main/resources/db/migration/shared/`
+   - File: `V1__init_shared_schema.sql`
+   - Executed automatically on application boot to establish `public.financial_category` and `public.user_login`.
+2. **Tenant Schema Migration**:
+   - Path: `server/src/main/resources/db/migration/tenants/`
+   - File: `V1__init_tenant_tables.sql`
+   - Executed programmatically by [`TenantProvisioningService`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/multitenancy/TenantProvisioningService.java) whenever a new user registers an account.
+3. **Safety & Integrity**:
+   - `spring.jpa.hibernate.ddl-auto: validate` ensures Hibernate never mutates schemas at runtime.
+   - All migrations execute within transactional boundaries.

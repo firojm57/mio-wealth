@@ -1,30 +1,20 @@
 package com.greenboard.investman.model.user;
 
-import com.greenboard.investman.model.expense.Expense;
-import com.greenboard.investman.model.investment.Investment;
-import com.greenboard.investman.model.liability.Liability;
-import com.greenboard.investman.model.saving.Saving;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Set;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "user_login")
+@Table(name = "user_login", schema = "public")
 public class User {
 
     @Id
@@ -38,33 +28,12 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @OneToOne(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private UserProfile userProfile;
+    @Column(name = "tenant_schema", length = 64, nullable = false, unique = true)
+    private String tenantSchema;
 
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Investment> investments;
-
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Saving> savings;
-
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Liability> liabilities;
-
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Expense> expenses;
-
-    public User(String userId, String password) {
+    public User(String userId, String password, String tenantSchema) {
         this.userId = userId;
         this.password = password;
+        this.tenantSchema = tenantSchema;
     }
 }
