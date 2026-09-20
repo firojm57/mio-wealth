@@ -6,6 +6,9 @@ import com.greenboard.investman.vo.investment.InvestmentVO;
 import java.util.List;
 
 public interface InvestmentService {
-    List<InvestmentVO> getInvestmentsForUser(String userId);
-    InvestmentVO createInvestment(String userId, InvestmentRequestVO request);
+    List<InvestmentVO> getInvestments();
+    InvestmentVO getInvestmentById(String id);
+    InvestmentVO createInvestment(InvestmentRequestVO request);
+    InvestmentVO updateInvestment(String id, InvestmentRequestVO request);
+    void deleteInvestment(String id);
 }

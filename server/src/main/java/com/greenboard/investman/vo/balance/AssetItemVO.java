@@ -6,15 +6,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AssetItemVO {
+    private String id;
     private String name;
-    private String category;
-    private double value;
-    private String change;
-    private String icon;
+    private String symbol;
+    private String domain; // "INVESTMENT" or "SAVING"
+    private String categoryCode;
+    private String categoryName;
+    private double amount;
+    private int quantity;
+    private double unitPrice;
+    private String tags;
+    private LocalDateTime date;
 }

@@ -1,8 +1,7 @@
 package com.greenboard.investman.service.auth.impl;
 
 import com.greenboard.investman.model.user.User;
-import com.greenboard.investman.model.user.UserProfile;
-import com.greenboard.investman.repository.user.UserProfileRepository;
+import com.greenboard.investman.multitenancy.TenantProvisioningService;
 import com.greenboard.investman.repository.user.UserRepository;
 import com.greenboard.investman.security.JwtTokenProvider;
 import com.greenboard.investman.service.auth.AuthService;
@@ -17,7 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -25,75 +25,71 @@ public class AuthServiceImpl implements AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
-    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TenantProvisioningService tenantProvisioningService;
 
     public AuthServiceImpl(UserRepository userRepository,
-                           UserProfileRepository userProfileRepository,
                            PasswordEncoder passwordEncoder,
-                           JwtTokenProvider jwtTokenProvider) {
+                           JwtTokenProvider jwtTokenProvider,
+                           TenantProvisioningService tenantProvisioningService) {
         this.userRepository = userRepository;
-        this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.tenantProvisioningService = tenantProvisioningService;
     }
 
     @Override
     public AuthResponseVO login(AuthRequestVO request) {
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findByUserId(request.getUserId())
                 .orElseThrow(() -> new BadCredentialsException("Invalid user ID or password."));
 
-        // Support BCrypt hashed passwords, while allowing smooth migration for legacy accounts
-        boolean matches = passwordEncoder.matches(request.getPassword(), user.getPassword())
-                || request.getPassword().equals(user.getPassword());
-
-        if (!matches) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Invalid user ID or password.");
         }
 
-        String token = jwtTokenProvider.generateToken(user.getUserId());
+        String token = jwtTokenProvider.generateToken(user.getUserId(), user.getTenantSchema());
 
-        UserProfile profile = userProfileRepository.findByUser_UserId(user.getUserId()).orElse(null);
-        UserProfileVO profileVO = new UserProfileVO();
-        if (profile != null) {
-            profileVO.setFirstName(profile.getFirstName());
-            profileVO.setMiddleName(profile.getMiddleName());
-            profileVO.setLastName(profile.getLastName());
-            profileVO.setEmail(profile.getEmail());
-            profileVO.setMobile(profile.getMobile());
-        } else {
+        UserProfileVO profileVO = tenantProvisioningService.getTenantProfile(user.getTenantSchema());
+        if (profileVO == null) {
+            profileVO = new UserProfileVO();
             profileVO.setFirstName(user.getUserId());
-            profileVO.setLastName("User");
-            profileVO.setEmail(user.getUserId() + "@miowealth.local");
+            profileVO.setLastName("");
+            profileVO.setEmail("");
         }
 
-        log.info("User '{}' authenticated successfully via JWT", user.getUserId());
+        log.info("User '{}' on tenant '{}' authenticated successfully via JWT", user.getUserId(), user.getTenantSchema());
         return new AuthResponseVO(token, user.getUserId(), profileVO);
     }
 
     @Override
-    @Transactional
     public StatusVO register(UserRegisterVO request) {
-        if (userRepository.existsById(request.getUserId())) {
+        if (userRepository.existsByUserId(request.getUserId())) {
             throw new IllegalArgumentException("User ID already exists.");
         }
 
+        // 1. Generate unique schema name: "tenant_" + 16 random hex chars
+        String tenantSchema = "tenant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+
+        // 2. Save credentials in public.user_login
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        User user = new User(request.getUserId(), encodedPassword);
+        User user = new User(request.getUserId(), encodedPassword, tenantSchema);
         userRepository.save(user);
 
-        UserProfile profile = new UserProfile(
+        // 3. Physically create schema and run Flyway tenant migrations
+        tenantProvisioningService.provisionTenant(tenantSchema);
+
+        // 4. Seed initial profile directly in the tenant schema
+        tenantProvisioningService.initTenantProfile(
+                tenantSchema,
                 request.getFirstName(),
                 request.getMiddleName(),
                 request.getLastName(),
                 request.getEmail(),
-                request.getMobile(),
-                user
+                request.getMobile()
         );
-        userProfileRepository.save(profile);
 
-        log.info("Successfully registered new user '{}' (email: {})", request.getUserId(), request.getEmail());
+        log.info("Successfully registered user '{}' and provisioned schema '{}'", request.getUserId(), tenantSchema);
 
         StatusVO status = new StatusVO();
         status.setStatus(APIConstants.LOGIN_STATUS_SUCCESS);

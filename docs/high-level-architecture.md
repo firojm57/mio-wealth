@@ -1,18 +1,18 @@
 # High-Level Architecture & System Design
 
-This document describes the high-level system architecture, deployment topology, monorepo unified packaging, container virtualization, and database portability strategy for **Mio Wealth**.
+This document describes the high-level system architecture, deployment topology, enterprise Schema-per-Tenant multi-tenancy, monorepo unified packaging, container virtualization, and database portability strategy for **Mio Wealth**.
 
 ---
 
 ## 1. System Architecture Overview
 
-Mio Wealth is built according to the **12-Factor App** methodology and cloud-native architectural patterns. The system serves as a unified financial hub where a client-side Single Page Application (SPA) communicates statelessly with a Java REST backend over HTTPS/HTTP.
+Mio Wealth is engineered according to the **12-Factor App** methodology and cloud-native architectural patterns. The system serves as a unified wealth and financial management platform where a client-side Single Page Application (SPA) communicates statelessly with a Java REST backend over HTTPS/HTTP, leveraging enterprise-grade schema isolation for strict tenant data segregation.
 
 ```mermaid
 graph TB
     subgraph ClientBrowser["Client Tier (Web Browser / Mobile Viewport)"]
-        SPA["Angular 21 Single Page Application<br/>(Signals, RxJS, Router, i18n)"]
-        Storage["Browser Session Storage<br/>(JWT Token & User Profile)"]
+        SPA["Angular 21 Single Page Application<br/>(Signals, RxJS, Reactive Modals, i18n)"]
+        Storage["Browser Session Storage<br/>(JWT Token with Tenant Claim)"]
         SPA <--> Storage
     end
 
@@ -20,54 +20,114 @@ graph TB
         subgraph WebServer["Embedded Apache Tomcat 10.1"]
             StaticFilter["Static Resource Handler<br/>(/index.html, *.js, *.css, /assets)"]
             SpaController["SpaController<br/>(Client-Side Route Forwarding)"]
-            SecFilter["Spring Security 6 Filter Chain<br/>(JwtAuthenticationFilter)"]
+            SecFilter["Spring Security 6 Filter Chain<br/>(JwtAuthenticationFilter & TenantContext)"]
             Dispatcher["Spring MVC DispatcherServlet"]
         end
 
         subgraph BusinessLayer["Application Services Tier"]
-            AuthSvc["AuthService<br/>(BCrypt, Token Issuance)"]
-            PortfolioSvc["PortfolioService<br/>(Asset & Net Worth Aggregation)"]
-            InvestSvc["InvestmentService<br/>(Holdings & Asset Creation)"]
+            AuthSvc["AuthService<br/>(BCrypt, Tenant Provisioning)"]
+            PortfolioSvc["PortfolioService<br/>(Net Worth & Summary Metrics)"]
+            AssetSvc["AssetService<br/>(Investments & Savings Assets)"]
+            LiabSvc["LiabilityService<br/>(Debt CRUD)"]
+            InvestSvc["InvestmentService<br/>(Full Investment CRUD)"]
+            CatSvc["CategoryService<br/>(Global Catalog)"]
             UserSvc["UserService & UserProfileService"]
         end
 
+        subgraph MultiTenancyCore["Multi-Tenancy Routing & Connection Layer"]
+            TenantCtx["TenantContext<br/>(ThreadLocal Tenant ID)"]
+            TenantConn["SchemaMultiTenantConnectionProvider<br/>(PostgreSQL search_path Router)"]
+            TenantRes["TenantIdentifierResolver<br/>(Current Tenant Identifier)"]
+            TenantProv["TenantProvisioningService<br/>(Flyway Tenant Migration Runner)"]
+            HikariPool["HikariCP Connection Pool<br/>(Shared High-Performance Pool)"]
+        end
+
         subgraph PersistenceLayer["Data Access Tier (JPA & Hibernate 6)"]
-            UserRepo["UserRepository & UserProfileRepository"]
+            UserRepo["UserRepository"]
+            CatRepo["FinancialCategoryRepository"]
+            ProfileRepo["UserProfileRepository"]
             InvestRepo["InvestmentRepository"]
             SavingRepo["SavingRepository"]
-            HikariPool["HikariCP Connection Pool (Max: 10, Min: 2)"]
+            LiabRepo["LiabilityRepository"]
+            ExpRepo["ExpenseRepository"]
         end
     end
 
     subgraph DataTier["Database Container: mio-wealth-postgres (:5432)"]
-        PostgresDB[("PostgreSQL 16 Engine<br/>Database: investmanDB")]
-        Volume[("Named Docker Volume<br/>postgres_data")]
-        PostgresDB --- Volume
+        subgraph SharedMaster["Master Schema: public"]
+            UserLoginTbl[("public.user_login<br/>(Auth & Tenant Mapping)")]
+            CatTbl[("public.financial_category<br/>(Global Canonical Catalog)")]
+        end
+
+        subgraph TenantA["Tenant Schema: tenant_uuid_a"]
+            InvestA[("investment")]
+            SavingA[("saving")]
+            LiabA[("liability")]
+            ExpA[("expense")]
+            ProfA[("user_profile & user_address")]
+        end
+
+        subgraph TenantB["Tenant Schema: tenant_uuid_b"]
+            InvestB[("investment")]
+            SavingB[("saving")]
+            LiabB[("liability")]
+            ExpB[("expense")]
+            ProfB[("user_profile & user_address")]
+        end
     end
 
     SPA -->|1. Static Assets GET /| StaticFilter
-    SPA -->|2. SPA Route GET /overview| SpaController
+    SPA -->|2. SPA Route GET /investments| SpaController
     SPA -->|3. REST API Calls /api/v1/*| SecFilter
     SpaController -->|Forward| StaticFilter
+    SecFilter -->|Populate TenantContext| TenantCtx
     SecFilter -->|Authenticated Context| Dispatcher
     Dispatcher --> AuthSvc
     Dispatcher --> PortfolioSvc
+    Dispatcher --> AssetSvc
+    Dispatcher --> LiabSvc
     Dispatcher --> InvestSvc
+    Dispatcher --> CatSvc
     Dispatcher --> UserSvc
-    AuthSvc --> UserRepo
-    PortfolioSvc --> InvestRepo
-    PortfolioSvc --> SavingRepo
-    InvestSvc --> InvestRepo
-    UserSvc --> UserRepo
-    UserRepo --> HikariPool
-    InvestRepo --> HikariPool
-    SavingRepo --> HikariPool
-    HikariPool -->|TCP / JDBC Port 5432| PostgresDB
+    AuthSvc --> TenantProv
+    TenantCtx --> TenantRes
+    TenantRes --> TenantConn
+    TenantConn --> HikariPool
+    HikariPool -->|SET search_path TO tenant_id, public| SharedMaster
+    HikariPool --> TenantA
+    HikariPool --> TenantB
 ```
 
 ---
 
-## 2. Monorepo Unified Fat JAR Packaging
+## 2. Enterprise Schema-per-Tenant Multi-Tenancy
+
+Mio Wealth implements **Schema-per-Tenant Multi-Tenancy** in PostgreSQL and Spring Boot 3.4 (Hibernate 6.6). This architecture guarantees complete physical logical data isolation between users while maintaining operational simplicity and high hardware utilization.
+
+### Multi-Tenancy Architecture Principles:
+1. **Shared Master Schema (`public`)**:
+   - Contains global system entities that span across all tenants:
+     - `public.user_login`: Master identity table containing credentials (BCrypt password hash), user status, role, and the assigned `tenant_schema` identifier.
+     - `public.financial_category`: Canonical master catalog of investment, saving, liability, and expense categories accessible across all tenants.
+2. **Isolated Per-Tenant Schemas (`tenant_<uuid>`)**:
+   - Each registered user owns a private PostgreSQL schema named using a cryptographically random UUID v4 string (sanitized with alphanumeric underscores, e.g., `tenant_a1b2c3d4e5f64a1b8c2d3e4f5a6b7c8d`).
+   - Tenant tables include: `user_profile`, `user_address`, `investment`, `saving`, `liability`, `expense`.
+   - **Zero User ID Foreign Keys**: Because all records reside in a strictly dedicated schema, tables do not store `user_id` foreign keys. This eliminates cross-tenant data leakage vulnerabilities at the database engine level.
+3. **Dynamic Connection Routing via PostgreSQL `search_path`**:
+   - The application maintains a single, high-performance HikariCP connection pool.
+   - When a connection is checked out for a request, [`SchemaMultiTenantConnectionProvider`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/multitenancy/SchemaMultiTenantConnectionProvider.java) dynamically executes:
+     ```sql
+     SET search_path TO "tenant_1234567890", public;
+     ```
+   - On connection release, `search_path` is safely reverted to `public;`.
+   - Resolving against `"tenant_...", public` allows queries in tenant tables to seamlessly reference `public.financial_category` without cross-schema qualification overhead.
+4. **Automated Tenant Lifecycle & Provisioning**:
+   - **User Registration**: [`TenantProvisioningService`](file:///d:/F_Drive/github/mio-wealth/server/src/main/java/com/greenboard/investman/multitenancy/TenantProvisioningService.java) executes `CREATE SCHEMA IF NOT EXISTS "<schema>"` and programmatically runs Flyway migrations from `classpath:db/migration/tenants` on the new schema.
+   - **Session Expiry & Re-Authentication**: The tenant schema assignment is permanent in `public.user_login`. When a user logs in after token expiration, the server issues a new JWT containing the existing tenant claim, connecting them immediately to their persistent schema.
+
+---
+
+## 3. Monorepo Unified Fat JAR Packaging
 
 The application utilizes a **Unified Deployment Artifact** approach. Both the Angular frontend (`imui`) and the Spring Boot backend (`server`) reside in the same monorepo and compile into a single executable JAR (`investman-0.0.1-SNAPSHOT.jar`).
 
@@ -100,7 +160,7 @@ graph LR
 
 ---
 
-## 3. Docker Infrastructure & Networking
+## 4. Docker Infrastructure & Networking
 
 The system is defined as an infrastructure-as-code deployment via `docker-compose.yml` operating on an isolated bridge network `mio-wealth-net`.
 
@@ -139,9 +199,9 @@ graph TB
 
 ---
 
-## 4. Detachable Multi-Database Architecture
+## 5. Detachable Multi-Database Architecture
 
-A foundational architectural requirement of Mio Wealth is **database detachability**: the ability to swap the backing database engine (PostgreSQL, MySQL, MariaDB, or H2) without modifying source code.
+Mio Wealth supports **database detachability**: the ability to swap the backing database engine (PostgreSQL, MySQL, MariaDB, or H2) without modifying source code.
 
 ```mermaid
 graph TD
@@ -157,7 +217,7 @@ graph TD
     EnvConfig --> Hibernate
 
     subgraph SupportedEngines["Detachable Supported Engines"]
-        PG["PostgreSQL (Default)<br/>Driver: org.postgresql.Driver<br/>URL: jdbc:postgresql://..."]
+        PG["PostgreSQL (Default & Multi-Tenant)<br/>Driver: org.postgresql.Driver<br/>URL: jdbc:postgresql://..."]
         MY["MySQL / MariaDB<br/>Driver: com.mysql.cj.jdbc.Driver<br/>URL: jdbc:mysql://..."]
         H2["In-Memory H2 (Testing)<br/>Driver: org.h2.Driver<br/>URL: jdbc:h2:mem:..."]
     end
@@ -168,15 +228,17 @@ graph TD
 ```
 
 ### Portability Guarantees in Code:
-1. **Vendor-Agnostic ID Generation**: All JPA entities declare `@GeneratedValue(strategy = GenerationType.IDENTITY)`, adhering to standard SQL identity columns supported natively across PostgreSQL, MySQL, SQL Server, and SQLite.
-2. **ANSI SQL Schema Migrations**: The Flyway migration (`V1__init_schema.sql`) uses standard ANSI data types (`VARCHAR`, `BIGINT`, `TIMESTAMP`, `DOUBLE PRECISION`, `INT`) and standard constraint syntax.
+1. **Vendor-Agnostic ID Generation**: All JPA entities declare `@GeneratedValue(strategy = GenerationType.UUID)` or natural keys, ensuring compatibility across relational database engines.
+2. **Modular Flyway Migrations**:
+   - `classpath:db/migration/shared`: Master shared catalog and login schemas.
+   - `classpath:db/migration/tenants`: Modular, tenant-scoped schema definitions executed dynamically upon new tenant provisioning.
 3. **Driver-Agnostic External Configuration**: Datasource driver classes, JDBC URLs, and credentials in `application.yml` are 100% externalized via standard Spring environment variables with zero hardcoding.
 
 ---
 
-## 5. Single Page Application (SPA) Forwarding Engine
+## 6. Single Page Application (SPA) Forwarding Engine
 
-Because Angular utilizes HTML5 PushState routing (clean URLs like `/overview`, `/investments`, `/settings` without hash fragments), direct navigation or browser page reloads must not result in HTTP 404 Not Found from the embedded server.
+Because Angular utilizes HTML5 PushState routing (clean URLs like `/overview`, `/investments`, `/balance` without hash fragments), direct navigation or browser page reloads must not result in HTTP 404 Not Found from the embedded server.
 
 ```mermaid
 sequenceDiagram

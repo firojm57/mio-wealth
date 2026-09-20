@@ -10,6 +10,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import java.io.Serializable;
@@ -36,7 +38,7 @@ public class UserAudit implements Serializable {
     @LastModifiedDate
     protected Date lastLogin;
 
-    @jakarta.persistence.PrePersist
+    @PrePersist
     protected void onCreate() {
         Date now = new Date();
         if (this.createdOn == null) {
@@ -50,7 +52,7 @@ public class UserAudit implements Serializable {
         }
     }
 
-    @jakarta.persistence.PreUpdate
+    @PreUpdate
     protected void onUpdate() {
         this.updatedOn = new Date();
     }

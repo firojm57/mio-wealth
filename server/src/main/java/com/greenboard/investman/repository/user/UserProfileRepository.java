@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
-    Optional<UserProfile> findByUser_UserId(String userId);
+public interface UserProfileRepository extends JpaRepository<UserProfile, String> {
+    Optional<UserProfile> findTopByOrderByIdAsc();
 }

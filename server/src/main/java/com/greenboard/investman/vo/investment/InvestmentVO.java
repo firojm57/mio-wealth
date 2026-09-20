@@ -6,19 +6,25 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class InvestmentVO {
-    private Long id;
-    private String name;
+    private String id;
     private String symbol;
-    private String allocation;
-    private String shares;
-    private String price;
-    private String value;
-    private String returnRate;
-    private boolean up;
+    private String name;
+    private String domain; // "INVESTMENT"
+    private String categoryCode;
+    private String categoryName;
+    private double amount;
+    private int quantity;
+    private double unitPrice;
+    private double returnRate;
+    private String tags;
+    private String action;
+    private LocalDateTime investmentDate;
 }

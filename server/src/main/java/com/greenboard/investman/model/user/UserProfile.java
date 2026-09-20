@@ -1,10 +1,6 @@
 package com.greenboard.investman.model.user;
 
 import com.greenboard.investman.model.common.UserAudit;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +8,12 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Set;
 
 @Getter
@@ -25,19 +23,18 @@ import java.util.Set;
 @Table(name = "user_profile")
 public class UserProfile extends UserAudit {
 
-    public UserProfile(String firstName, String middleName, String lastName, String email, String mobile, User user) {
+    public UserProfile(String firstName, String middleName, String lastName, String email, String mobile) {
         this.firstName = firstName;
         this.middleName = middleName;
         this.lastName = lastName;
         this.email = email;
         this.mobile = mobile;
-        this.user = user;
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_profile_id", nullable = false)
-    private long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", length = 36, nullable = false, updatable = false)
+    private String id;
 
     @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
@@ -61,8 +58,4 @@ public class UserProfile extends UserAudit {
 
     @Column(name = "profile_picture", length = 255)
     private String profilePicture;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 }

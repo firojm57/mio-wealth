@@ -8,11 +8,11 @@
 
     <!-- Actions -->
     <div class="flex items-center space-x-2.5">
-      <button class="flex items-center space-x-2 px-4 py-2 bg-card hover:bg-background border border-border rounded-full font-medium text-xs text-text-primary shadow-sm cursor-pointer transition-colors duration-300">
-        <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-export"></use></svg>
-        <span>{{ 'DASHBOARD.EXPORT' | translate }}</span>
+      <button (click)="refreshData()" class="flex items-center space-x-2 px-4 py-2 bg-card hover:bg-background border border-border rounded-full font-medium text-xs text-text-primary shadow-sm cursor-pointer transition-colors duration-300">
+        <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-performance"></use></svg>
+        <span>Refresh</span>
       </button>
-      <button class="flex items-center space-x-2 px-5 py-2 bg-accent-primary hover:bg-accent-primary/90 text-card rounded-full font-semibold text-xs shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300">
+      <button (click)="openCreateModal()" class="flex items-center space-x-2 px-5 py-2 bg-accent-primary hover:bg-accent-primary/90 text-card rounded-full font-semibold text-xs shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300">
         <svg class="w-4 h-4"><use href="assets/icons.svg#icon-plus"></use></svg>
         <span>Add Transaction</span>
       </button>
@@ -24,11 +24,11 @@
     <!-- Value -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
       <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Portfolio Value</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$120,151</div>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalValue | currency:'INR':'symbol':'1.0-0' }}</div>
       <div class="flex items-center space-x-1.5 mt-2">
         <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
           <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
-          <span>+6.4%</span>
+          <span>{{ totalValue > 0 ? '+0.0%' : '0.0%' }}</span>
         </span>
         <span class="text-xs font-medium text-text-secondary">All-Time Yield</span>
       </div>
@@ -37,23 +37,23 @@
     <!-- Cost Basis -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
       <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Total Invested</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$112,890</div>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalInvested | currency:'INR':'symbol':'1.0-0' }}</div>
       <div class="text-xs font-medium text-text-secondary mt-3">Initial capital cost basis</div>
     </div>
 
-    <!-- Cash Balance -->
+    <!-- Holdings Count -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Uninvested Cash</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$7,261</div>
-      <div class="text-xs font-medium text-text-secondary mt-3">Ready to be deployed</div>
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Active Assets</span>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ holdings.length }}</div>
+      <div class="text-xs font-medium text-text-secondary mt-3">Across diversified categories</div>
     </div>
   </div>
 
-  <!-- Holdings Table (WOW premium style) -->
+  <!-- Holdings Table -->
   <div class="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
     <div class="px-6 py-5 border-b border-border/40 flex items-center justify-between">
       <h3 class="font-bold text-text-primary uppercase tracking-wider text-sm">Asset Holdings</h3>
-      <button class="text-xs font-semibold text-accent-secondary hover:underline cursor-pointer flex items-center space-x-0.5">
+      <button (click)="refreshData()" class="text-xs font-semibold text-accent-secondary hover:underline cursor-pointer flex items-center space-x-0.5">
         <span>Refresh Feed</span>
       </button>
     </div>
@@ -69,33 +69,59 @@
             <th class="px-6 py-4">Shares</th>
             <th class="px-6 py-4">Current Value</th>
             <th class="px-6 py-4 text-right">Return (YTD)</th>
+            <th class="px-6 py-4 text-center">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-border/20 text-xs font-semibold text-text-primary">
-          @for (hold of holdings; track hold.symbol) {
+          @for (hold of holdings; track hold.id) {
             <tr class="hover:bg-background/25 transition-colors duration-200">
               <td class="px-6 py-4.5 flex items-center space-x-3">
                 <div class="w-8 h-8 rounded-full bg-accent-secondary/10 text-accent-secondary flex items-center justify-center font-bold text-xs">
-                  {{ hold.symbol[0] }}
+                  {{ hold.symbol ? hold.symbol[0] : 'I' }}
                 </div>
                 <div>
-                  <div class="font-bold text-text-primary">{{ hold.name }}</div>
-                  <div class="text-[10px] text-text-secondary font-medium">{{ hold.symbol }}</div>
+                  <div class="font-bold text-text-primary flex items-center space-x-1.5">
+                    <span>{{ hold.name }}</span>
+                    @if (hold.tags) {
+                      <span class="text-[9px] px-1.5 py-0.2 rounded bg-accent-secondary/10 text-accent-secondary">{{ hold.tags }}</span>
+                    }
+                  </div>
+                  <div class="text-[10px] text-text-secondary font-medium">{{ hold.symbol }} &bull; {{ hold.categoryName }}</div>
                 </div>
               </td>
               <td class="px-6 py-4.5">
                 <div class="flex items-center space-x-2">
-                  <span class="font-bold">{{ hold.allocation }}</span>
+                  <span class="font-bold">{{ (totalValue > 0 ? (hold.amount / totalValue) : 0) | percent:'1.0-1' }}</span>
                   <div class="w-16 h-1.5 bg-background rounded-full overflow-hidden hidden sm:block">
-                    <div class="h-full bg-accent-secondary rounded-full" [style.width]="hold.allocation"></div>
+                    <div class="h-full bg-accent-secondary rounded-full" [style.width.%]="(totalValue > 0 ? (hold.amount / totalValue) * 100 : 0)"></div>
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-4.5">{{ hold.price }}</td>
-              <td class="px-6 py-4.5">{{ hold.shares }}</td>
-              <td class="px-6 py-4.5 font-bold">{{ hold.value }}</td>
-              <td class="px-6 py-4.5 text-right font-bold" [ngClass]="hold.up ? 'text-feedback-success' : 'text-feedback-danger'">
-                {{ hold.return }}
+              <td class="px-6 py-4.5">{{ hold.unitPrice | currency:'INR':'symbol':'1.2-2' }}</td>
+              <td class="px-6 py-4.5">{{ hold.quantity }}</td>
+              <td class="px-6 py-4.5 font-bold">{{ hold.amount | currency:'INR':'symbol':'1.0-0' }}</td>
+              <td class="px-6 py-4.5 text-right font-bold" [ngClass]="hold.returnRate >= 0 ? 'text-feedback-success' : 'text-feedback-danger'">
+                {{ hold.returnRate | percent:'1.1-2' }}
+              </td>
+              <td class="px-6 py-4.5 text-center">
+                <div class="flex items-center justify-center space-x-2">
+                  <button (click)="openEditModal(hold)" title="Edit Investment" class="p-1.5 rounded-lg hover:bg-background text-text-secondary hover:text-accent-primary cursor-pointer transition-colors duration-200">
+                    <svg class="w-4 h-4"><use href="assets/icons.svg#icon-edit"></use></svg>
+                  </button>
+                  <button (click)="openDeleteModal(hold)" title="Delete Investment" class="p-1.5 rounded-lg hover:bg-feedback-danger/10 text-text-secondary hover:text-feedback-danger cursor-pointer transition-colors duration-200">
+                    <svg class="w-4 h-4"><use href="assets/icons.svg#icon-trash"></use></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="px-6 py-12 text-center text-text-secondary">
+                <div class="flex flex-col items-center justify-center space-y-2">
+                  <svg class="w-8 h-8 text-text-secondary/40"><use href="assets/icons.svg#icon-investments"></use></svg>
+                  <span class="font-bold text-sm text-text-primary">No investment holdings recorded yet</span>
+                  <span class="text-xs text-text-secondary">Click "Add Transaction" to record your first asset.</span>
+                </div>
               </td>
             </tr>
           }
@@ -103,4 +129,124 @@
       </table>
     </div>
   </div>
+
+  <!-- Create / Edit Modal -->
+  @if (isFormOpen()) {
+    <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-card border border-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-fade-in relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-border/40 pb-4 mb-6">
+          <h2 class="text-lg font-bold text-text-primary">
+            {{ editingId() ? 'Edit Investment Transaction' : 'Add Investment Transaction' }}
+          </h2>
+          <button (click)="closeFormModal()" class="p-1 rounded-full hover:bg-background text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
+            <svg class="w-5 h-5"><use href="assets/icons.svg#icon-close"></use></svg>
+          </button>
+        </div>
+
+        <form (ngSubmit)="saveInvestment()" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Symbol -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Symbol *</label>
+              <input type="text" name="symbol" [(ngModel)]="formData.symbol" placeholder="e.g. AAPL, RELIANCE" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary uppercase" required />
+            </div>
+
+            <!-- Category Dropdown (dynamically loaded from DB) -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Category *</label>
+              <select name="categoryCode" [(ngModel)]="formData.categoryCode" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary cursor-pointer" required>
+                @for (cat of categories; track cat.code) {
+                  <option [value]="cat.code">{{ cat.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Asset Name -->
+          <div>
+            <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Asset Name *</label>
+            <input type="text" name="assetName" [(ngModel)]="formData.assetName" placeholder="e.g. Apple Inc, Reliance Industries" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Quantity -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Quantity *</label>
+              <input type="number" name="quantity" [(ngModel)]="formData.quantity" (input)="onAmountOrQuantityChange()" min="1" step="1" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
+            </div>
+
+            <!-- Total Amount -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Total Amount (₹) *</label>
+              <input type="number" name="amount" [(ngModel)]="formData.amount" (input)="onAmountOrQuantityChange()" min="0.01" step="any" placeholder="0.00" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
+            </div>
+
+            <!-- Unit Price -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Unit Price (₹)</label>
+              <input type="number" name="unitPrice" [(ngModel)]="formData.unitPrice" min="0" step="any" placeholder="Calculated" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Action -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Action</label>
+              <select name="action" [(ngModel)]="formData.action" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary cursor-pointer">
+                <option value="BUY">BUY</option>
+                <option value="SELL">SELL</option>
+              </select>
+            </div>
+
+            <!-- Tags -->
+            <div>
+              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Tags</label>
+              <input type="text" name="tags" [(ngModel)]="formData.tags" placeholder="e.g. TECH, LONG_TERM" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" />
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-border/40 mt-6">
+            <button type="button" (click)="closeFormModal()" class="px-5 py-2 rounded-full border border-border hover:bg-background text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
+              Cancel
+            </button>
+            <button type="submit" [disabled]="isSubmitting()" class="flex items-center space-x-2 px-6 py-2 rounded-full bg-accent-primary hover:bg-accent-primary/90 text-card text-xs font-semibold shadow-md shadow-accent-primary/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              @if (isSubmitting()) {
+                <span>Saving...</span>
+              } @else {
+                <span>{{ editingId() ? 'Update Investment' : 'Save Investment' }}</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Modal (Accessible, No native confirm/alert) -->
+  @if (isDeleteOpen()) {
+    <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-card border border-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl animate-fade-in">
+        <div class="w-12 h-12 rounded-2xl bg-feedback-danger/10 text-feedback-danger flex items-center justify-center mb-4">
+          <svg class="w-6 h-6"><use href="assets/icons.svg#icon-trash"></use></svg>
+        </div>
+        <h3 class="text-base font-bold text-text-primary mb-2">Delete Investment Holding</h3>
+        <p class="text-xs text-text-secondary leading-relaxed mb-6">
+          Are you sure you want to delete <strong class="text-text-primary">{{ targetHolding()?.name }}</strong> ({{ targetHolding()?.symbol }})? This action will permanently remove this record from your tenant data.
+        </p>
+        <div class="flex items-center justify-end space-x-3">
+          <button type="button" (click)="closeDeleteModal()" class="px-5 py-2 rounded-full border border-border hover:bg-background text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
+            Cancel
+          </button>
+          <button type="button" (click)="confirmDelete()" [disabled]="isSubmitting()" class="px-6 py-2 rounded-full bg-feedback-danger hover:bg-feedback-danger/90 text-white text-xs font-semibold shadow-md shadow-feedback-danger/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            @if (isSubmitting()) {
+              <span>Deleting...</span>
+            } @else {
+              <span>Delete</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

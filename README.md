@@ -4,18 +4,34 @@ Welcome to **Mio Wealth** (Investman), a cloud-native, enterprise-grade personal
 
 ---
 
+## 💎 Production-Grade Architectural Highlights
+
+Mio Wealth follows strict **Clean Code Architecture**, high-cohesion/low-coupling domain design, and cloud-native scalability:
+
+- **Enterprise Schema-per-Tenant Multi-Tenancy**: Isolated PostgreSQL schemas per tenant (`tenant_<uuid>`) dynamically routed via `search_path` over a shared HikariCP pool. Global authentication and category catalog reside in the shared `public` schema.
+- **Investment Full CRUD Operations**: End-to-end holdings lifecycle management (`GET`, `POST`, `PUT`, `DELETE`) with accessible custom modals, dynamic category selection from database, and reactive Angular signals.
+- **UUID v4 Auto-Generated Primary Keys**: Every transactional entity (`user_login`, `user_profile`, `user_address`, `investment`, `saving`, `liability`, `expense`) uses standard `VARCHAR(36)` UUID v4 keys.
+- **Natural Primary Key Category Catalog**: A normalized `financial_category` table with `code VARCHAR(50) PRIMARY KEY` partitioned into 4 macro domains (`INVESTMENT`, `SAVING`, `EXPENSE`, `LIABILITY`), avoiding artificial numeric surrogate keys.
+- **Multi-Dimensional Tagging**: Core financial entities support customizable search and tax planning tags (e.g. `#80C`, `#retirement`, `#emergency_fund`, `#tax_exempt`).
+- **Independent REST Resource Endpoints**: Decomposed legacy monolithic responses into decoupled, single-responsibility micro-APIs (`/balance/summary`, `/balance/assets`, `/balance/liabilities`, `/categories`, `/investments`).
+- **Zero UI Leakage & Pure Numeric API**: Java DTOs/VOs transmit raw numeric values (`double`, `long`, `int`). Presentation formatting (currency symbols like `₹`, icon resolution, percentages) is handled strictly in the Angular presentation layer.
+- **Efficient UI State & Domain Icons**: $O(1)$ macro domain icon lookup (`getDomainIcon(domain)`) and compact dictionary error handling.
+- **Responsive 3-Column Dashboard**: Symmetrical, balanced overview layout without clutter or bloated widgets.
+
+---
+
 ## 🧭 System Documentation Index
 
-The complete "X-ray" scan of the platform's architecture, database schema, security filters, and REST APIs is modularized in the [`/docs`](docs/) directory:
+The complete architectural specifications, database schema, security filters, and REST APIs are documented in the [`/docs`](docs/) directory:
 
 | Document | Scope | Description |
 | :--- | :--- | :--- |
-| [**1. High-Level Architecture**](docs/high-level-architecture.md) | High-Level | System topology, monorepo unified Fat JAR packaging, Docker container orchestration, detachable database abstraction, and SPA routing. |
-| [**2. Low-Level Design**](docs/low-level-design.md) | Low-Level | Class hierarchies, package structures, Spring Data JPA repositories, DTO/VO mapping layers, and global exception handling. |
-| [**3. Database Schema**](docs/database-schema.md) | Low-Level | Entity-Relationship (ER) diagram, table definitions, column types, foreign keys, cascades, JPA auditing, and Flyway migrations. |
-| [**4. Security & Authentication**](docs/security-architecture.md) | Low & High | Spring Security 6 stateless filter chain, HMAC-SHA256 JWT lifecycle, BCrypt hashing, CORS, and session management. |
-| [**5. REST API Reference**](docs/api-reference.md) | Specification | Complete API catalog with HTTP methods, paths, request/response payloads, validation rules, and status codes. |
-| [**6. Sequence Diagrams**](docs/sequence-diagrams.md) | Workflows | Step-by-step Mermaid sequence flows for registration, login, portfolio calculation, investment creation, and session expiration. |
+| [**1. High-Level Architecture**](docs/high-level-architecture.md) | High-Level | System topology, enterprise Schema-per-Tenant multi-tenancy, monorepo unified Fat JAR packaging, Docker container orchestration, and SPA routing. |
+| [**2. Low-Level Design**](docs/low-level-design.md) | Low-Level | Class hierarchies, multi-tenancy connection provider & identifier resolver, Spring Data JPA repositories, DTO/VO mapping layers, and global exception handling. |
+| [**3. Database Schema**](docs/database-schema.md) | Low-Level | Schema-per-Tenant ER diagram, master `public` vs isolated `tenant_<uuid>` tables, column types, constraints, and Flyway migration architecture. |
+| [**4. Security & Authentication**](docs/security-architecture.md) | Low & High | Spring Security 6 stateless filter chain, JWT lifecycle with embedded tenant claims, BCrypt hashing, CORS, and session management. |
+| [**5. REST API Reference**](docs/api-reference.md) | Specification | Complete API catalog for independent endpoints (`/categories`, `/balance/summary`, `/balance/assets`, `/balance/liabilities`, `/investments` full CRUD), payloads, validation rules, and status codes. |
+| [**6. Sequence Diagrams**](docs/sequence-diagrams.md) | Workflows | Step-by-step Mermaid sequence flows for registration & tenant provisioning, login, dynamic schema connection routing, investment CRUD, and session expiration. |
 | [**7. API URL Design & Swagger Guide**](docs/api-design-and-swagger.md) | Standards & Tooling | REST URL conventions, View vs Data routing architecture, and how to generate interactive Swagger UI & OpenAPI 3 specs. |
 
 ---
@@ -87,3 +103,10 @@ run.bat
 ```
 This automatically compiles the Angular UI, embeds static assets into `server/src/main/resources/static/`, and boots the Spring Boot backend server on `http://localhost:8080`.
 
+---
+
+## License
+
+Copyright (c) 2026 Firoj Mujawar. All Rights Reserved.
+
+This repository and its source code are **strictly proprietary and confidential**. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without prior written permission. See [LICENSE](LICENSE) for details.

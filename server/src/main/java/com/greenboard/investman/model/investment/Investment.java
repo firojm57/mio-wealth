@@ -1,11 +1,6 @@
 package com.greenboard.investman.model.investment;
 
-import com.greenboard.investman.model.user.User;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import jakarta.persistence.CascadeType;
+import com.greenboard.investman.model.category.FinancialCategory;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,10 +9,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -27,31 +24,38 @@ import java.util.Set;
 public class Investment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "investment_id", nullable = false)
-    private long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", length = 36, nullable = false, updatable = false)
+    private String id;
 
-    @Column(name = "amount")
+    @Column(name = "symbol", length = 30, nullable = false)
+    private String symbol;
+
+    @Column(name = "asset_name", length = 150, nullable = false)
+    private String assetName;
+
+    @Column(name = "amount", nullable = false)
     private double amount;
 
-    @Column(name = "quantity")
+    @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "investment_date")
+    @Column(name = "unit_price", nullable = false)
+    private double unitPrice;
+
+    @Column(name = "investment_date", nullable = false)
     private LocalDateTime investmentDate;
 
     @Column(name = "remarks", length = 255)
     private String remarks;
 
-    @Column(name = "action", length = 50)
+    @Column(name = "tags", length = 255)
+    private String tags;
+
+    @Column(name = "action", length = 50, nullable = false)
     private String action;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @OneToMany(mappedBy = "investment",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<InvestmentType> investmentTypes;
+    @JoinColumn(name = "category_code", nullable = false)
+    private FinancialCategory category;
 }

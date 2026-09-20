@@ -1,52 +1,39 @@
 package com.greenboard.investman.model.user;
 
-import com.greenboard.investman.model.investment.Investment;
-import com.greenboard.investman.model.saving.Saving;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import java.util.Set;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "user_login")
+@Table(name = "user_login", schema = "public")
 public class User {
 
-    public User(String userId, String password) {
-        this.userId = userId;
-        this.password = password;
-    }
-
     @Id
-    @Column(name = "user_id", length = 100)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", length = 36, nullable = false, updatable = false)
+    private String id;
+
+    @Column(name = "user_id", length = 100, nullable = false, unique = true)
     private String userId;
 
     @Column(name = "password", nullable = false)
     private String password;
 
-    @OneToOne(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private UserProfile userProfile;
+    @Column(name = "tenant_schema", length = 64, nullable = false, unique = true)
+    private String tenantSchema;
 
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Investment> investments;
-
-    @OneToMany(mappedBy = "user",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL)
-    private Set<Saving> savings;
+    public User(String userId, String password, String tenantSchema) {
+        this.userId = userId;
+        this.password = password;
+        this.tenantSchema = tenantSchema;
+    }
 }

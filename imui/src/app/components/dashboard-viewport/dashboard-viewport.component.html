@@ -37,11 +37,11 @@
       <!-- Net Worth Card -->
       <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.NET_WORTH' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$1,248,310</div>
+        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ netWorth | currency:'INR':'symbol':'1.0-0' }}</div>
         <div class="flex items-center space-x-1.5 mt-2.5">
           <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
             <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
-            <span>+2.8%</span>
+            <span>Live</span>
           </span>
           <span class="text-xs font-medium text-text-secondary">{{ 'DASHBOARD.VS_LAST_MONTH' | translate }}</span>
         </div>
@@ -51,7 +51,7 @@
       <div class="group relative p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md cursor-help">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.TOTAL_ASSETS' | translate }}</span>
         <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5 flex items-center justify-between">
-          <span>$1,795,650</span>
+          <span>{{ totalAssets | currency:'INR':'symbol':'1.0-0' }}</span>
           <svg class="w-4 h-4 text-text-secondary group-hover:text-accent-secondary transition-colors duration-200"><use href="assets/icons.svg#icon-dots"></use></svg>
         </div>
         <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1">
@@ -64,15 +64,11 @@
           <div class="space-y-1.5">
             <div class="flex justify-between text-[11px] font-medium">
               <span class="text-text-secondary">{{ 'DASHBOARD.CASH' | translate }}:</span>
-              <span class="text-text-primary font-bold">$795,650</span>
+              <span class="text-text-primary font-bold">₹0</span>
             </div>
             <div class="flex justify-between text-[11px] font-medium">
               <span class="text-text-secondary">{{ 'DASHBOARD.STOCKS' | translate }}:</span>
-              <span class="text-text-primary font-bold">$75,300</span>
-            </div>
-            <div class="flex justify-between text-[11px] font-medium">
-              <span class="text-text-secondary">{{ 'DASHBOARD.PROPERTY' | translate }}:</span>
-              <span class="text-text-primary font-bold">$547,340</span>
+              <span class="text-text-primary font-bold">{{ totalAssets | currency:'INR':'symbol':'1.0-0' }}</span>
             </div>
           </div>
         </div>
@@ -81,7 +77,7 @@
       <!-- Total Liabilities Card -->
       <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.TOTAL_LIABILITIES' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">$547,340</div>
+        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalLiabilities | currency:'INR':'symbol':'1.0-0' }}</div>
         <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-feedback-danger"></span>
           <span>{{ 'DASHBOARD.MORTGAGE_LOANS' | translate }}</span>
@@ -91,11 +87,11 @@
       <!-- Investment Return Card -->
       <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.INVESTMENT_RETURN' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">8.2%</div>
+        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalAssets > 0 ? '+0.0%' : '0.0%' }}</div>
         <div class="flex items-center space-x-1.5 mt-2.5">
           <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
             <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
-            <span>+1.2%</span>
+            <span>Live</span>
           </span>
           <span class="text-xs font-medium text-text-secondary">{{ 'DASHBOARD.THIS_MONTH' | translate }}</span>
         </div>
@@ -148,10 +144,10 @@
             <line x1="0" y1="220" x2="700" y2="220" stroke="var(--border)" stroke-opacity="0.9" />
 
             <!-- Y-Axis Labels -->
-            <text x="5" y="45" class="fill-text-secondary font-semibold text-[10px]">$10k</text>
-            <text x="5" y="105" class="fill-text-secondary font-semibold text-[10px]">$6k</text>
-            <text x="5" y="165" class="fill-text-secondary font-semibold text-[10px]">$2k</text>
-            <text x="5" y="215" class="fill-text-secondary font-semibold text-[10px]">$0</text>
+            <text x="5" y="45" class="fill-text-secondary font-semibold text-[10px]">₹10k</text>
+            <text x="5" y="105" class="fill-text-secondary font-semibold text-[10px]">₹6k</text>
+            <text x="5" y="165" class="fill-text-secondary font-semibold text-[10px]">₹2k</text>
+            <text x="5" y="215" class="fill-text-secondary font-semibold text-[10px]">₹0</text>
 
             <!-- Columns Group -->
             <!-- Feb '25 -->
@@ -204,12 +200,12 @@
             <div class="flex items-center space-x-1.5 text-[11px] font-semibold mt-1">
               <span class="w-2 h-2 rounded-full bg-accent-secondary"></span>
               <span class="text-text-secondary">{{ 'DASHBOARD.SAVINGS' | translate }}:</span>
-              <span class="text-text-primary font-bold">$3,200</span>
+              <span class="text-text-primary font-bold">₹3,200</span>
             </div>
             <div class="flex items-center space-x-1.5 text-[11px] font-semibold mt-0.5">
               <span class="w-2 h-2 rounded-full bg-accent-tertiary"></span>
               <span class="text-text-secondary">{{ 'DASHBOARD.SPENDING' | translate }}:</span>
-              <span class="text-text-primary font-bold">$5,100</span>
+              <span class="text-text-primary font-bold">₹5,100</span>
             </div>
           </div>
         </div>
@@ -226,85 +222,44 @@
         </div>
       </div>
 
-      <!-- Right: Sidebar Widgets -->
-      <div class="space-y-6 flex flex-col justify-between">
-        
-        <!-- AI Advisor Card -->
-        <div class="p-6 rounded-3xl bg-gradient-to-br from-advisor-start to-advisor-end border border-border/50 shadow-sm relative overflow-hidden flex-1 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-text-primary uppercase tracking-wider">{{ 'DASHBOARD.WEALTH_AI_TITLE' | translate }}</span>
-              <span class="flex h-2 w-2 relative">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-secondary opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-accent-secondary"></span>
-              </span>
-            </div>
-            
-            <div class="bg-card text-text-primary border border-border/40 p-4 rounded-2xl rounded-tl-none text-xs font-medium leading-relaxed shadow-sm mt-4.5">
-              {{ 'DASHBOARD.WEALTH_AI_MSG' | translate }}
-            </div>
-          </div>
-
-          <!-- Action buttons -->
-          <div class="flex items-center space-x-2.5 mt-6">
-            <button class="px-4 py-2 bg-accent-primary hover:bg-accent-primary/95 text-card text-xs font-bold rounded-full shadow-md shadow-accent-primary/5 cursor-pointer transition-colors duration-200">
-              {{ 'DASHBOARD.WEALTH_AI_BTN_OPTIMISE' | translate }}
-            </button>
-            <button class="px-4 py-2 bg-card hover:bg-background border border-border text-text-primary text-xs font-bold rounded-full shadow-sm cursor-pointer transition-colors duration-200">
-              {{ 'DASHBOARD.WEALTH_AI_BTN_LEARN' | translate }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Top Investment Holdings Donut Chart Widget -->
-        <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <!-- Right: Top Investment Holdings Donut Chart Widget -->
+      <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
+        <div>
           <div class="flex items-center justify-between mb-4.5">
             <h3 class="text-sm font-bold text-text-primary uppercase tracking-wider">{{ 'DASHBOARD.TOP_HOLDINGS' | translate }}</h3>
             <button class="text-text-secondary hover:text-text-primary cursor-pointer"><svg class="w-4 h-4"><use href="assets/icons.svg#icon-dots"></use></svg></button>
           </div>
 
-          <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-            <!-- SVG Donut Chart -->
-            <div class="relative w-36 h-36 flex items-center justify-center">
-              <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="38" stroke="var(--border)" stroke-width="10" fill="none" stroke-opacity="0.3" />
-                <circle cx="50" cy="50" r="38" stroke="var(--accent-secondary)" stroke-width="10" fill="none" stroke-dasharray="42.97 238.76" stroke-dashoffset="0" stroke-linecap="round" />
-                <circle cx="50" cy="50" r="38" stroke="var(--accent-tertiary)" stroke-width="10" fill="none" stroke-dasharray="35.81 238.76" stroke-dashoffset="-42.97" stroke-linecap="round" />
-                <circle cx="50" cy="50" r="38" stroke="#9CA3AF" stroke-width="10" fill="none" stroke-dasharray="28.65 238.76" stroke-dashoffset="-78.78" stroke-linecap="round" />
-                <circle cx="50" cy="50" r="38" stroke="var(--feedback-success)" stroke-width="10" fill="none" stroke-dasharray="19.10 238.76" stroke-dashoffset="-107.43" stroke-linecap="round" />
-                <circle cx="50" cy="50" r="38" stroke="#E5E7EB" stroke-width="10" fill="none" stroke-dasharray="112.21 238.76" stroke-dashoffset="-126.53" stroke-linecap="round" />
-              </svg>
-              
-              <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-2 pointer-events-none">
-                <span class="text-xs font-extrabold text-text-primary leading-none">$1,795,650</span>
-                <span class="text-[8px] font-bold text-text-secondary uppercase tracking-tight mt-0.5">{{ 'DASHBOARD.TOTAL_ASSETS' | translate }}</span>
+          @if (holdings.length > 0) {
+            <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+              <!-- SVG Donut Chart -->
+              <div class="relative w-36 h-36 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" stroke="var(--border)" stroke-width="10" fill="none" stroke-opacity="0.3" />
+                  <circle cx="50" cy="50" r="38" stroke="var(--accent-secondary)" stroke-width="10" fill="none" stroke-dasharray="140 238.76" stroke-dashoffset="0" stroke-linecap="round" />
+                </svg>
+                
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-2 pointer-events-none">
+                  <span class="text-xs font-extrabold text-text-primary leading-none">{{ totalAssets | currency:'INR':'symbol':'1.0-0' }}</span>
+                  <span class="text-[8px] font-bold text-text-secondary uppercase tracking-tight mt-0.5">{{ 'DASHBOARD.TOTAL_ASSETS' | translate }}</span>
+                </div>
               </div>
-            </div>
 
-            <!-- Segment Legend Lists -->
-            <div class="flex-1 sm:pl-4 space-y-2 text-xs font-semibold w-full">
-              <div class="flex items-center justify-between text-text-secondary">
-                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent-secondary"></span> <span>APPL</span></span>
-                <span class="text-text-primary">18%</span>
-              </div>
-              <div class="flex items-center justify-between text-text-secondary">
-                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent-tertiary"></span> <span>VOO</span></span>
-                <span class="text-text-primary">15%</span>
-              </div>
-              <div class="flex items-center justify-between text-text-secondary">
-                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#9CA3AF]"></span> <span>MSFT</span></span>
-                <span class="text-text-primary">12%</span>
-              </div>
-              <div class="flex items-center justify-between text-text-secondary">
-                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-feedback-success"></span> <span>TSLA</span></span>
-                <span class="text-text-primary">8%</span>
-              </div>
-              <div class="flex items-center justify-between text-text-secondary">
-                <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-[#E5E7EB]"></span> <span>Others</span></span>
-                <span class="text-text-primary">47%</span>
+              <!-- Segment Legend Lists -->
+              <div class="flex-1 sm:pl-4 space-y-2 text-xs font-semibold w-full">
+                @for (item of holdings.slice(0, 4); track item.symbol) {
+                  <div class="flex items-center justify-between text-text-secondary">
+                    <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent-secondary"></span> <span>{{ item.symbol }}</span></span>
+                    <span class="text-text-primary">{{ getAllocation(item) }}</span>
+                  </div>
+                }
               </div>
             </div>
-          </div>
+          } @else {
+            <div class="p-8 text-center bg-background/30 rounded-2xl border border-dashed border-border/60">
+              <p class="text-xs font-semibold text-text-secondary">No holdings recorded yet.</p>
+            </div>
+          }
 
         </div>
 
@@ -312,8 +267,8 @@
 
     </div>
 
-    <!-- GRID ROW 3: DETAILED TABLES -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+    <!-- GRID ROW 3: DETAILED TABLES (Symmetrical 3-Column Grid) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       
       <!-- Card 1: Goals Tracker Widget -->
       <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
@@ -362,74 +317,28 @@
           <button class="text-text-secondary hover:text-text-primary cursor-pointer"><svg class="w-4 h-4"><use href="assets/icons.svg#icon-dots"></use></svg></button>
         </div>
 
-        <div class="space-y-3.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-full bg-feedback-success/10 flex items-center justify-center text-feedback-success">
-                <svg class="w-4 h-4"><use href="assets/icons.svg#icon-cashflow"></use></svg>
+        @if (holdings.length > 0) {
+          <div class="space-y-3.5">
+            @for (h of holdings.slice(0, 3); track h.id) {
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                  <div class="w-8 h-8 rounded-full bg-feedback-success/10 flex items-center justify-center text-feedback-success">
+                    <svg class="w-4 h-4"><use [attr.href]="'assets/icons.svg#' + getDomainIcon(h.domain)"></use></svg>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-text-primary">{{ h.name }}</div>
+                    <div class="text-[10px] font-medium text-text-secondary">{{ h.symbol }} &bull; {{ h.quantity }} units</div>
+                  </div>
+                </div>
+                <span class="text-xs font-bold text-feedback-success">{{ h.amount | currency:'INR':'symbol':'1.0-0' }}</span>
               </div>
-              <div>
-                <div class="text-xs font-bold text-text-primary">{{ 'DASHBOARD.DIVIDEND_RECEIVED' | translate }}</div>
-                <div class="text-[10px] font-medium text-text-secondary">{{ 'DASHBOARD.VANGUARD_ETF' | translate }}</div>
-              </div>
-            </div>
-            <span class="text-xs font-bold text-feedback-success">+$32,000</span>
+            }
           </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-full bg-feedback-danger/10 flex items-center justify-center text-feedback-danger">
-                <svg class="w-4 h-4"><use href="assets/icons.svg#icon-liabilities"></use></svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-text-primary">{{ 'DASHBOARD.MORTGAGE_PMT' | translate }}</div>
-                <div class="text-[10px] font-medium text-text-secondary">{{ 'DASHBOARD.VANGUARD_ETF_PURCHASE' | translate }}</div>
-              </div>
-            </div>
-            <span class="text-xs font-bold text-text-primary">-$1,100</span>
+        } @else {
+          <div class="p-8 text-center bg-background/30 rounded-2xl border border-dashed border-border/60">
+            <p class="text-xs font-semibold text-text-secondary">No recent transactions recorded.</p>
           </div>
-
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-              <div class="w-8 h-8 rounded-full bg-feedback-danger/10 flex items-center justify-center text-feedback-danger">
-                <svg class="w-4 h-4"><use href="assets/icons.svg#icon-expenses"></use></svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-text-primary">{{ 'DASHBOARD.CREDIT_CARD_PMT' | translate }}</div>
-                <div class="text-[10px] font-medium text-text-secondary">{{ 'DASHBOARD.CHASE_BANK_AUTO' | translate }}</div>
-              </div>
-            </div>
-            <span class="text-xs font-bold text-text-primary">-$800</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Age Range Pie/Donut Chart -->
-      <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
-        <div class="flex items-center justify-between mb-4 border-b border-border/40 pb-3">
-          <h3 class="text-sm font-bold text-text-primary uppercase tracking-wider">{{ 'DASHBOARD.AGE_RANGE' | translate }}</h3>
-          <button class="text-text-secondary hover:text-text-primary cursor-pointer"><svg class="w-4 h-4"><use href="assets/icons.svg#icon-dots"></use></svg></button>
-        </div>
-
-        <div class="flex items-center justify-around">
-          <div class="relative w-28 h-28 flex items-center justify-center select-none">
-            <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="38" stroke="var(--border)" stroke-width="10" fill="none" stroke-opacity="0.3" />
-              <circle cx="50" cy="50" r="38" stroke="var(--accent-secondary)" stroke-width="10" fill="none" stroke-dasharray="107.4 238.76" stroke-dashoffset="0" stroke-linecap="round" />
-              <circle cx="50" cy="50" r="38" stroke="var(--feedback-success)" stroke-width="10" fill="none" stroke-dasharray="35.8 238.76" stroke-dashoffset="-107.4" stroke-linecap="round" />
-              <circle cx="50" cy="50" r="38" stroke="var(--accent-tertiary)" stroke-width="10" fill="none" stroke-dasharray="28.6 238.76" stroke-dashoffset="-143.2" stroke-linecap="round" />
-              <circle cx="50" cy="50" r="38" stroke="#9CA3AF" stroke-width="10" fill="none" stroke-dasharray="11.9 238.76" stroke-dashoffset="-171.8" stroke-linecap="round" />
-            </svg>
-            <div class="absolute text-xs font-extrabold text-text-primary">45%</div>
-          </div>
-
-          <div class="space-y-1 text-[10px] font-bold text-text-secondary">
-            <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-accent-secondary"></span> <span>25-34</span></div>
-            <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-feedback-success"></span> <span>35-44</span></div>
-            <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-accent-tertiary"></span> <span>18-24</span></div>
-            <div class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-[#9CA3AF]"></span> <span>45+</span></div>
-          </div>
-        </div>
+        }
       </div>
 
       <!-- Card 4: Spending Categories Progress Card -->

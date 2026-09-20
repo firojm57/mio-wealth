@@ -32,11 +32,16 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(String username) {
+        return generateToken(username, "public");
+    }
+
+    public String generateToken(String username, String tenantSchema) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
                 .subject(username)
+                .claim("tenant", tenantSchema != null ? tenantSchema : "public")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
@@ -44,12 +49,22 @@ public class JwtTokenProvider {
     }
 
     public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = parseClaims(token);
+        return claims.getSubject();
+    }
+
+    public String getTenantFromToken(String token) {
+        Claims claims = parseClaims(token);
+        String tenant = claims.get("tenant", String.class);
+        return (tenant != null && !tenant.isBlank()) ? tenant : "public";
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return claims.getSubject();
     }
 
     public boolean validateToken(String authToken) {

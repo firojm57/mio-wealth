@@ -1,24 +1,30 @@
 export interface InvestmentHolding {
-  name: string;
+  id: string;
   symbol: string;
-  allocation: string;
-  shares: string;
-  price: string;
-  value: string;
-  return: string;
-  up: boolean;
+  name: string;
+  domain: string;
+  categoryCode: string;
+  categoryName: string;
+  amount: number;
+  quantity: number;
+  unitPrice: number;
+  returnRate: number;
+  tags?: string;
+  action: string;
+  investmentDate: string;
 }
 
 export interface InvestmentDTO {
-  id?: number;
+  id?: string;
+  symbol: string;
+  assetName: string;
+  categoryCode: string;
   amount: number;
   quantity: number;
-  investmentDate?: string;
+  unitPrice?: number;
   remarks?: string;
+  tags?: string;
   action?: string;
-  userId?: string;
-  type?: string;
-  typeName?: string;
 }
 
 export interface InvestmentSummary {

@@ -1,9 +1,9 @@
 package com.greenboard.investman.service.investment.impl;
 
+import com.greenboard.investman.model.category.FinancialCategory;
 import com.greenboard.investman.model.investment.Investment;
-import com.greenboard.investman.model.user.User;
+import com.greenboard.investman.repository.category.FinancialCategoryRepository;
 import com.greenboard.investman.repository.investment.InvestmentRepository;
-import com.greenboard.investman.repository.user.UserRepository;
 import com.greenboard.investman.service.investment.InvestmentService;
 import com.greenboard.investman.vo.investment.InvestmentRequestVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class InvestmentServiceImpl implements InvestmentService {
@@ -23,74 +23,120 @@ public class InvestmentServiceImpl implements InvestmentService {
     private static final Logger log = LoggerFactory.getLogger(InvestmentServiceImpl.class);
 
     private final InvestmentRepository investmentRepository;
-    private final UserRepository userRepository;
+    private final FinancialCategoryRepository categoryRepository;
 
-    public InvestmentServiceImpl(InvestmentRepository investmentRepository, UserRepository userRepository) {
+    public InvestmentServiceImpl(InvestmentRepository investmentRepository,
+                                 FinancialCategoryRepository categoryRepository) {
         this.investmentRepository = investmentRepository;
-        this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<InvestmentVO> getInvestmentsForUser(String userId) {
-        List<Investment> investments = investmentRepository.findByUser_UserId(userId);
+    public List<InvestmentVO> getInvestments() {
+        List<Investment> investments = investmentRepository.findAll();
 
         if (investments.isEmpty()) {
-            // Return baseline standard portfolio holdings for new users
-            return getDefaultHoldings();
+            return Collections.emptyList();
         }
 
-        List<InvestmentVO> result = new ArrayList<>();
-        for (Investment inv : investments) {
-            result.add(InvestmentVO.builder()
-                    .id(inv.getId())
-                    .name(inv.getRemarks() != null ? inv.getRemarks() : "Asset Investment")
-                    .symbol("INV-" + inv.getId())
-                    .allocation("10%")
-                    .shares(String.valueOf(inv.getQuantity()))
-                    .price("$" + String.format("%.2f", inv.getAmount() / (inv.getQuantity() > 0 ? inv.getQuantity() : 1)))
-                    .value("$" + String.format("%,.0f", inv.getAmount()))
-                    .returnRate("+5.0%")
-                    .up(true)
-                    .build());
-        }
-        return result;
+        return investments.stream()
+                .map(this::toVO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InvestmentVO getInvestmentById(String id) {
+        Investment investment = investmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Investment not found: " + id));
+        return toVO(investment);
     }
 
     @Override
     @Transactional
-    public InvestmentVO createInvestment(String userId, InvestmentRequestVO request) {
-        User user = userRepository.findById(userId).orElse(null);
+    public InvestmentVO createInvestment(InvestmentRequestVO request) {
+        FinancialCategory category = categoryRepository.findById(request.getCategoryCode())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid category code: " + request.getCategoryCode()));
+
+        double unitPrice = request.getUnitPrice() != null && request.getUnitPrice() > 0
+                ? request.getUnitPrice()
+                : (request.getQuantity() > 0 ? request.getAmount() / request.getQuantity() : request.getAmount());
 
         Investment investment = new Investment();
+        investment.setSymbol(request.getSymbol().trim().toUpperCase());
+        investment.setAssetName(request.getAssetName().trim());
+        investment.setCategory(category);
         investment.setAmount(request.getAmount());
         investment.setQuantity(request.getQuantity());
+        investment.setUnitPrice(unitPrice);
         investment.setRemarks(request.getRemarks());
-        investment.setAction(request.getAction() != null ? request.getAction() : "BUY");
+        investment.setTags(request.getTags());
+        investment.setAction(request.getAction() != null && !request.getAction().isBlank() ? request.getAction() : "BUY");
         investment.setInvestmentDate(LocalDateTime.now());
-        investment.setUser(user);
 
         Investment saved = investmentRepository.save(investment);
+        log.info("Saved investment #{} (symbol: {}, amount: {})", saved.getId(), saved.getSymbol(), saved.getAmount());
 
-        return InvestmentVO.builder()
-                .id(saved.getId())
-                .name(saved.getRemarks() != null ? saved.getRemarks() : "Investment")
-                .symbol("INV-" + saved.getId())
-                .allocation("5%")
-                .shares(String.valueOf(saved.getQuantity()))
-                .price("$" + String.format("%.2f", saved.getAmount() / (saved.getQuantity() > 0 ? saved.getQuantity() : 1)))
-                .value("$" + String.format("%,.0f", saved.getAmount()))
-                .returnRate("+0.0%")
-                .up(true)
-                .build();
+        return toVO(saved);
     }
 
-    private List<InvestmentVO> getDefaultHoldings() {
-        return Arrays.asList(
-                InvestmentVO.builder().name("Apple Inc.").symbol("AAPL").allocation("18%").shares("120").price("$178.50").value("$21,420").returnRate("+12.4%").up(true).build(),
-                InvestmentVO.builder().name("Microsoft Corp.").symbol("MSFT").allocation("12%").shares("85").price("$415.20").value("$35,292").returnRate("+8.7%").up(true).build(),
-                InvestmentVO.builder().name("Vanguard S&P 500 ETF").symbol("VOO").allocation("15%").shares("110").price("$465.10").value("$51,161").returnRate("+5.3%").up(true).build(),
-                InvestmentVO.builder().name("Tesla Inc.").symbol("TSLA").allocation("8%").shares("70").price("$175.40").value("$12,278").returnRate("-4.2%").up(false).build()
-        );
+    @Override
+    @Transactional
+    public InvestmentVO updateInvestment(String id, InvestmentRequestVO request) {
+        Investment investment = investmentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Investment not found: " + id));
+
+        FinancialCategory category = categoryRepository.findById(request.getCategoryCode())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid category code: " + request.getCategoryCode()));
+
+        double unitPrice = request.getUnitPrice() != null && request.getUnitPrice() > 0
+                ? request.getUnitPrice()
+                : (request.getQuantity() > 0 ? request.getAmount() / request.getQuantity() : request.getAmount());
+
+        investment.setSymbol(request.getSymbol().trim().toUpperCase());
+        investment.setAssetName(request.getAssetName().trim());
+        investment.setCategory(category);
+        investment.setAmount(request.getAmount());
+        investment.setQuantity(request.getQuantity());
+        investment.setUnitPrice(unitPrice);
+        investment.setRemarks(request.getRemarks());
+        investment.setTags(request.getTags());
+        if (request.getAction() != null && !request.getAction().isBlank()) {
+            investment.setAction(request.getAction());
+        }
+
+        Investment updated = investmentRepository.save(investment);
+        log.info("Updated investment #{} (symbol: {}, amount: {})", updated.getId(), updated.getSymbol(), updated.getAmount());
+
+        return toVO(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInvestment(String id) {
+        if (!investmentRepository.existsById(id)) {
+            throw new IllegalArgumentException("Investment not found: " + id);
+        }
+        investmentRepository.deleteById(id);
+        log.info("Deleted investment #{}", id);
+    }
+
+    private InvestmentVO toVO(Investment inv) {
+        return InvestmentVO.builder()
+                .id(inv.getId())
+                .symbol(inv.getSymbol())
+                .name(inv.getAssetName())
+                .domain("INVESTMENT")
+                .categoryCode(inv.getCategory() != null ? inv.getCategory().getCode() : "STOCKS")
+                .categoryName(inv.getCategory() != null ? inv.getCategory().getName() : "Investment")
+                .amount(inv.getAmount())
+                .quantity(inv.getQuantity())
+                .unitPrice(inv.getUnitPrice())
+                .returnRate(0.0)
+                .tags(inv.getTags())
+                .action(inv.getAction())
+                .investmentDate(inv.getInvestmentDate())
+                .build();
     }
 }
