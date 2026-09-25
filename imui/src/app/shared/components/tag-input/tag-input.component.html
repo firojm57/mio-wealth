@@ -1,0 +1,67 @@
+<div class="relative w-full">
+  <!-- Multi-select Container -->
+  <div
+    class="w-full min-h-[44px] px-3 py-1.5 rounded-xl border border-border bg-background text-text-primary text-sm flex flex-wrap items-center gap-1.5 focus-within:ring-2 focus-within:ring-accent-primary/20 focus-within:border-accent-primary transition-all cursor-text"
+    (click)="inputEl.focus()"
+  >
+    <!-- Selected Tag Chips -->
+    @for (tag of selectedTags(); track tag) {
+      <span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-card border border-border text-text-primary shadow-xs animate-fade-in">
+        <span>{{ tag }}</span>
+        <button
+          type="button"
+          (click)="removeTag(tag); $event.stopPropagation()"
+          class="w-3.5 h-3.5 rounded-full hover:bg-feedback-danger/10 hover:text-feedback-danger flex items-center justify-center text-text-secondary cursor-pointer transition-colors"
+          title="Remove tag"
+        >
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </span>
+    }
+
+    <!-- Input text field -->
+    <input
+      #inputEl
+      type="text"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      (focus)="onInputFocus()"
+      (keydown)="onKeyDown($event)"
+      [placeholder]="selectedTags().length === 0 ? placeholder() : 'Add more...'"
+      class="flex-1 min-w-[120px] bg-transparent border-none text-text-primary text-xs font-medium focus:outline-none placeholder:text-text-secondary/50 py-1"
+    />
+  </div>
+
+  <!-- Dropdown Suggestions -->
+  @if (isOpen() && (filteredSuggestions().length > 0 || canCreateNew())) {
+    <div class="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto animate-fade-in">
+      @if (canCreateNew()) {
+        <button
+          type="button"
+          (click)="addTag(query())"
+          class="w-full text-left px-4 py-2.5 text-xs font-bold text-accent-secondary hover:bg-background flex items-center space-x-2 border-b border-border/40 cursor-pointer transition-colors"
+        >
+          <svg class="w-3.5 h-3.5"><use href="assets/icons.svg#icon-plus"></use></svg>
+          <span>Create and add "<strong>{{ query() }}</strong>"</span>
+        </button>
+      }
+
+      <div class="p-1.5 space-y-0.5">
+        @for (item of filteredSuggestions(); track item.id || item.name) {
+          <button
+            type="button"
+            (click)="addTag(item.name)"
+            class="w-full text-left px-3.5 py-2 rounded-xl text-xs font-medium text-text-primary hover:bg-background flex items-center justify-between cursor-pointer transition-colors"
+          >
+            <span>{{ item.name }}</span>
+            @if (item.isSystem) {
+              <span class="text-[10px] text-text-secondary opacity-70">Suggested</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

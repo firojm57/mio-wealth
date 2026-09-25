@@ -7,6 +7,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,7 +57,7 @@ public class JwtTokenProvider {
     public String getTenantFromToken(String token) {
         Claims claims = parseClaims(token);
         String tenant = claims.get("tenant", String.class);
-        return (tenant != null && !tenant.isBlank()) ? tenant : "public";
+        return StringUtils.isNotBlank(tenant) ? tenant : "public";
     }
 
     private Claims parseClaims(String token) {

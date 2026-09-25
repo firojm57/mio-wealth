@@ -1,5 +1,7 @@
 package com.greenboard.investman.multitenancy;
 
+import org.apache.commons.lang3.StringUtils;
+
 public final class TenantContext {
 
     public static final String DEFAULT_TENANT = "public";
@@ -11,7 +13,7 @@ public final class TenantContext {
     }
 
     public static void setTenantId(String tenantId) {
-        if (tenantId != null && !tenantId.isBlank()) {
+        if (StringUtils.isNotBlank(tenantId)) {
             CURRENT_TENANT.set(tenantId.trim());
         } else {
             CURRENT_TENANT.set(DEFAULT_TENANT);
@@ -20,7 +22,7 @@ public final class TenantContext {
 
     public static String getTenantId() {
         String tenant = CURRENT_TENANT.get();
-        return (tenant != null && !tenant.isBlank()) ? tenant : DEFAULT_TENANT;
+        return StringUtils.isNotBlank(tenant) ? tenant : DEFAULT_TENANT;
     }
 
     public static void clear() {

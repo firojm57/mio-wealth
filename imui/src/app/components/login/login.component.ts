@@ -36,10 +36,13 @@ import { ToastService } from '../../services/toast.service';
               type="text"
               name="userId"
               [(ngModel)]="userId"
-              required
               placeholder="Enter your User ID"
-              class="w-full px-4 py-3 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-sm font-medium"
+              class="w-full px-4 py-3 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-sm font-medium"
+              [ngClass]="formSubmitted() && !userId.trim() ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && !userId.trim()) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">User ID is required</p>
+            }
           </div>
 
           <div>
@@ -50,15 +53,18 @@ import { ToastService } from '../../services/toast.service';
               type="password"
               name="password"
               [(ngModel)]="password"
-              required
               placeholder="••••••••"
-              class="w-full px-4 py-3 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-sm font-medium"
+              class="w-full px-4 py-3 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-sm font-medium"
+              [ngClass]="formSubmitted() && !password ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && !password) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Password is required</p>
+            }
           </div>
 
           <button
             type="submit"
-            [disabled]="isLoading() || !userId || !password"
+            [disabled]="isLoading()"
             class="w-full mt-2 py-3 px-4 bg-text-primary text-card font-semibold text-sm rounded-xl hover:opacity-90 active:scale-98 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
             @if (isLoading()) {
@@ -93,9 +99,11 @@ export class LoginComponent {
   userId = '';
   password = '';
   readonly isLoading = signal<boolean>(false);
+  readonly formSubmitted = signal<boolean>(false);
 
   onSubmit(): void {
-    if (!this.userId || !this.password) return;
+    this.formSubmitted.set(true);
+    if (!this.userId.trim() || !this.password) return;
     this.isLoading.set(true);
 
     this.authService.login({ userId: this.userId.trim(), password: this.password }).subscribe({

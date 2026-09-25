@@ -9,6 +9,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.greenboard.investman.config.FlexibleLocalDateTimeDeserializer;
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,25 +20,29 @@ import lombok.Setter;
 @Builder
 public class InvestmentRequestVO {
 
-    @NotBlank(message = "symbol is required")
-    private String symbol;
-
     @NotBlank(message = "assetName is required")
     private String assetName;
 
     @NotBlank(message = "categoryCode is required")
     private String categoryCode;
 
-    @NotNull(message = "amount is required")
-    @Positive(message = "amount must be positive")
-    private Double amount;
+    @NotNull(message = "buyingPrice is required")
+    @Positive(message = "buyingPrice must be positive")
+    private Double buyingPrice;
 
-    @NotNull(message = "quantity is required")
-    @Positive(message = "quantity must be positive")
     private Integer quantity;
-
     private Double unitPrice;
+
+    @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
+    private LocalDateTime investmentDate;
+
+    private Boolean isSold;
+    private Double sellingPrice;
+
+    @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
+    private LocalDateTime soldDate;
+
     private String remarks;
     private String tags;
-    private String action;
+    private Double currentPercentageChange;
 }

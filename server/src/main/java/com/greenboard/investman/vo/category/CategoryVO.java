@@ -17,4 +17,5 @@ public class CategoryVO {
     private String name;
     private DomainType domain;
     private String description;
+    private boolean isCustom;
 }

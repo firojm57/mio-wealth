@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,6 +21,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "investment")
 public class Investment {
@@ -28,23 +32,36 @@ public class Investment {
     @Column(name = "id", length = 36, nullable = false, updatable = false)
     private String id;
 
-    @Column(name = "symbol", length = 30, nullable = false)
-    private String symbol;
-
     @Column(name = "asset_name", length = 150, nullable = false)
     private String assetName;
 
-    @Column(name = "amount", nullable = false)
-    private double amount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_code", nullable = false)
+    private FinancialCategory category;
 
+    @Column(name = "buying_price", nullable = false)
+    private double buyingPrice;
+
+    @Builder.Default
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    private int quantity = 1;
 
+    @Builder.Default
     @Column(name = "unit_price", nullable = false)
-    private double unitPrice;
+    private double unitPrice = 0.0;
 
     @Column(name = "investment_date", nullable = false)
     private LocalDateTime investmentDate;
+
+    @Builder.Default
+    @Column(name = "is_sold", nullable = false)
+    private boolean isSold = false;
+
+    @Column(name = "selling_price")
+    private Double sellingPrice;
+
+    @Column(name = "sold_date")
+    private LocalDateTime soldDate;
 
     @Column(name = "remarks", length = 255)
     private String remarks;
@@ -52,10 +69,7 @@ public class Investment {
     @Column(name = "tags", length = 255)
     private String tags;
 
-    @Column(name = "action", length = 50, nullable = false)
-    private String action;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_code", nullable = false)
-    private FinancialCategory category;
+    @Builder.Default
+    @Column(name = "current_percentage_change")
+    private Double currentPercentageChange = 0.0;
 }

@@ -1,35 +1,51 @@
 export interface InvestmentHolding {
   id: string;
-  symbol: string;
   name: string;
+  symbol?: string;
   domain: string;
   categoryCode: string;
   categoryName: string;
-  amount: number;
+  buyingPrice: number;
+  amount?: number;
   quantity: number;
   unitPrice: number;
-  returnRate: number;
-  tags?: string;
-  action: string;
   investmentDate: string;
+  isSold: boolean;
+  sellingPrice?: number | null;
+  soldDate?: string | null;
+  profitLoss?: number | null;
+  returnPercentage?: number | null;
+  currentPercentageChange?: number | null;
+  currentValue?: number | null;
+  unrealizedProfitLoss?: number | null;
+  remarks?: string;
+  tags?: string;
 }
 
 export interface InvestmentDTO {
   id?: string;
-  symbol: string;
   assetName: string;
   categoryCode: string;
-  amount: number;
-  quantity: number;
+  buyingPrice: number;
+  quantity?: number;
   unitPrice?: number;
+  investmentDate?: string;
+  isSold?: boolean;
+  sellingPrice?: number | null;
+  soldDate?: string | null;
+  currentPercentageChange?: number | null;
   remarks?: string;
   tags?: string;
-  action?: string;
+}
+
+export interface MarkSoldDTO {
+  sellingPrice: number;
+  soldDate?: string;
 }
 
 export interface InvestmentSummary {
   totalInvested: number;
-  currentValue: number;
-  unrealizedReturnPercent: number;
+  activeInvested: number;
+  realizedProfitLoss: number;
   holdings: InvestmentHolding[];
 }

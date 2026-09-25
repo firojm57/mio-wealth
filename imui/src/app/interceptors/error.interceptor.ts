@@ -22,15 +22,18 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401) {
         if (req.url.includes('/auth/login')) {
           errorMessage = errorMessage || 'Invalid user ID or password. Please verify your credentials.';
+          toastService.showToast(errorMessage, 'danger');
         } else {
-          errorMessage = 'Your session has expired. Please sign in again.';
-          authService.logout();
+          errorMessage = errorMessage || 'Invalid or expired session. You have been signed out for security.';
+          authService.logout(errorMessage, 'danger');
         }
-      } else if (!errorMessage) {
-        errorMessage = STATUS_MESSAGES[error.status] || (error.status >= 500 ? STATUS_MESSAGES[500] : 'An unexpected server error occurred.');
+      } else {
+        if (!errorMessage) {
+          errorMessage = STATUS_MESSAGES[error.status] || (error.status >= 500 ? STATUS_MESSAGES[500] : 'An unexpected server error occurred.');
+        }
+        toastService.showToast(errorMessage, 'danger');
       }
 
-      toastService.showToast(errorMessage, 'danger');
       return throwError(() => error);
     })
   );

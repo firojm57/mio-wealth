@@ -1,5 +1,6 @@
 package com.greenboard.investman.multitenancy;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.jdbc.connections.spi.AbstractDataSourceBasedMultiTenantConnectionProviderImpl;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public class SchemaMultiTenantConnectionProvider extends AbstractDataSourceBased
     public Connection getConnection(String tenantIdentifier) throws SQLException {
         Connection connection = super.getConnection(tenantIdentifier);
         try (Statement stmt = connection.createStatement()) {
-            if (tenantIdentifier != null && !tenantIdentifier.isBlank() && !"public".equalsIgnoreCase(tenantIdentifier)) {
+            if (StringUtils.isNotBlank(tenantIdentifier) && !"public".equalsIgnoreCase(tenantIdentifier)) {
                 stmt.execute("SET search_path TO \"" + tenantIdentifier + "\", public");
             } else {
                 stmt.execute("SET search_path TO public");

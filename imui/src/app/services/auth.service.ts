@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthResponse, LoginRequest, UserProfile, UserRegisterRequest } from '../models/user.model';
-import { ToastService } from './toast.service';
+import { ToastService, ToastType } from './toast.service';
 
 const TOKEN_KEY = 'mio_wealth_auth_token';
 const USER_KEY = 'mio_wealth_user_profile';
@@ -28,12 +28,12 @@ export class AuthService {
 
   private getStoredToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
   }
 
   private getStoredUser(): UserProfile | null {
     if (typeof window === 'undefined') return null;
-    const raw = sessionStorage.getItem(USER_KEY);
+    const raw = sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw) as UserProfile;
@@ -84,14 +84,16 @@ export class AuthService {
     );
   }
 
-  logout(): void {
+  logout(message: string = 'You have been signed out.', toastType: ToastType = 'info'): void {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(USER_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
     }
     this.tokenSignal.set(null);
     this.currentUser.set(null);
-    this.toastService.showToast('You have been signed out.', 'info');
+    this.toastService.showToast(message, toastType);
     this.router.navigate(['/login']);
   }
 
@@ -99,6 +101,8 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(TOKEN_KEY, token);
       sessionStorage.setItem(USER_KEY, JSON.stringify(profile));
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(profile));
     }
     this.tokenSignal.set(token);
     this.currentUser.set(profile);

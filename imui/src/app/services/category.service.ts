@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Category, FinancialDomain } from '../models/category.model';
+import { Category, CategoryDTO, FinancialDomain } from '../models/category.model';
 
 @Injectable({
   providedIn: 'root'
@@ -27,6 +27,15 @@ export class CategoryService {
         this.isLoading.set(false);
         this.categories.set([]);
         return of([]);
+      })
+    );
+  }
+
+  createCategory(category: CategoryDTO): Observable<Category> {
+    const url = `${environment.apiPrefix}/categories`;
+    return this.http.post<Category>(url, category).pipe(
+      tap((created) => {
+        this.categories.update((current) => [...current, created]);
       })
     );
   }

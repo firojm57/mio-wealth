@@ -247,9 +247,9 @@
 
               <!-- Segment Legend Lists -->
               <div class="flex-1 sm:pl-4 space-y-2 text-xs font-semibold w-full">
-                @for (item of holdings.slice(0, 4); track item.symbol) {
+                @for (item of holdings.slice(0, 4); track item.id) {
                   <div class="flex items-center justify-between text-text-secondary">
-                    <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent-secondary"></span> <span>{{ item.symbol }}</span></span>
+                    <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded-full bg-accent-secondary"></span> <span>{{ item.name }}</span></span>
                     <span class="text-text-primary">{{ getAllocation(item) }}</span>
                   </div>
                 }
@@ -327,10 +327,10 @@
                   </div>
                   <div>
                     <div class="text-xs font-bold text-text-primary">{{ h.name }}</div>
-                    <div class="text-[10px] font-medium text-text-secondary">{{ h.symbol }} &bull; {{ h.quantity }} units</div>
+                    <div class="text-[10px] font-medium text-text-secondary">{{ h.categoryName || 'Investment' }} &bull; {{ h.quantity }} units</div>
                   </div>
                 </div>
-                <span class="text-xs font-bold text-feedback-success">{{ h.amount | currency:'INR':'symbol':'1.0-0' }}</span>
+                <span class="text-xs font-bold text-feedback-success">{{ (h.buyingPrice || h.amount) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
               </div>
             }
           </div>

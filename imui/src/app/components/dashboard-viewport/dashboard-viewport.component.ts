@@ -4,7 +4,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { DashboardService } from '../../services/dashboard.service';
 import { BalanceService } from '../../services/balance.service';
 import { InvestmentService } from '../../services/investment.service';
-import { InvestmentDTO, InvestmentHolding } from '../../models/investment.model';
+import { InvestmentHolding } from '../../models/investment.model';
 import { getDomainIcon } from '../../models/category.model';
 
 @Component({
@@ -44,8 +44,9 @@ export class DashboardViewportComponent implements OnInit {
   }
 
   getAllocation(item: InvestmentHolding): string {
-    const total = this.holdings.reduce((sum, h) => sum + (h.amount || 0), 0);
+    const itemCost = item.buyingPrice || item.amount || 0;
+    const total = this.holdings.reduce((sum, h) => sum + (h.buyingPrice || h.amount || 0), 0);
     if (!total || total === 0) return '0%';
-    return `${Math.round(((item.amount || 0) / total) * 100)}%`;
+    return `${Math.round((itemCost / total) * 100)}%`;
   }
 }
