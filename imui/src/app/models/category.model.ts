@@ -5,6 +5,14 @@ export interface Category {
   name: string;
   domain: FinancialDomain;
   description?: string;
+  isCustom?: boolean;
+}
+
+export interface CategoryDTO {
+  code: string;
+  name: string;
+  domain: FinancialDomain;
+  description?: string;
 }
 
 export const DOMAIN_ICONS: Record<string, string> = {

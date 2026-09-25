@@ -1,6 +1,7 @@
 package com.greenboard.investman;
 
 import com.greenboard.investman.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +45,14 @@ public class SecurityConfiguration {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"status\":401,\"message\":\"Authentication required. Please sign in to access this resource.\"}");
+                    response.getWriter().flush();
+                })
+            )
             .authorizeHttpRequests(auth -> auth
                 // Public authentication (Registration & Login)
                 .requestMatchers("/api/v1/auth/**").permitAll()

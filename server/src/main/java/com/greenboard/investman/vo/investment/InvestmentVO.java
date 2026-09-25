@@ -15,16 +15,30 @@ import java.time.LocalDateTime;
 @Builder
 public class InvestmentVO {
     private String id;
-    private String symbol;
     private String name;
     private String domain; // "INVESTMENT"
     private String categoryCode;
     private String categoryName;
-    private double amount;
+    private double buyingPrice;
     private int quantity;
     private double unitPrice;
-    private double returnRate;
-    private String tags;
-    private String action;
     private LocalDateTime investmentDate;
+    private boolean isSold;
+    private Double sellingPrice;
+    private LocalDateTime soldDate;
+    private Double profitLoss;
+    private Double returnPercentage;
+    private Double currentPercentageChange;
+    private Double currentValue;
+    private Double unrealizedProfitLoss;
+    private String remarks;
+    private String tags;
+
+    public double getAmount() {
+        return this.buyingPrice;
+    }
+
+    public String getSymbol() {
+        return this.categoryCode != null ? this.categoryCode : this.name;
+    }
 }

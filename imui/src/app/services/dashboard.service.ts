@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -7,6 +8,8 @@ export class DashboardService {
   readonly activeTab = signal<string>('Overview');
   readonly isDark = signal<boolean>(false);
   readonly mobileMenuOpen = signal<boolean>(false);
+  readonly currencyCode = signal<string>(environment.currencyCode || 'INR');
+  readonly currencySymbol = signal<string>(environment.currencySymbol || '₹');
 
   toggleMobileMenu() {
     this.mobileMenuOpen.set(!this.mobileMenuOpen());

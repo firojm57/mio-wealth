@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { InvestmentDTO, InvestmentHolding } from '../models/investment.model';
+import { InvestmentDTO, InvestmentHolding, MarkSoldDTO } from '../models/investment.model';
 
 @Injectable({
   providedIn: 'root'
@@ -48,5 +48,15 @@ export class InvestmentService {
   deleteInvestment(id: string): Observable<void> {
     const url = `${environment.apiPrefix}/investments/${id}`;
     return this.http.delete<void>(url);
+  }
+
+  markAsSold(id: string, payload: MarkSoldDTO): Observable<InvestmentHolding> {
+    const url = `${environment.apiPrefix}/investments/${id}/sold`;
+    return this.http.patch<InvestmentHolding>(url, payload);
+  }
+
+  updatePercentage(id: string, currentPercentageChange: number): Observable<InvestmentHolding> {
+    const url = `${environment.apiPrefix}/investments/${id}/percentage`;
+    return this.http.patch<InvestmentHolding>(url, { currentPercentageChange });
   }
 }

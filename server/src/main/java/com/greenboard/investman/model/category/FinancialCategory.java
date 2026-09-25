@@ -19,7 +19,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "financial_category", schema = "public")
+@Table(name = "category")
 public class FinancialCategory {
 
     @Id
@@ -35,4 +35,8 @@ public class FinancialCategory {
 
     @Column(name = "description", length = 255)
     private String description;
+
+    @Builder.Default
+    @Column(name = "is_custom", nullable = false)
+    private boolean isCustom = false;
 }

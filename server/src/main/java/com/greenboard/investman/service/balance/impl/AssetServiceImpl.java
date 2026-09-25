@@ -48,19 +48,21 @@ public class AssetServiceImpl implements AssetService {
         }
 
         for (Investment inv : investments) {
-            assets.add(AssetItemVO.builder()
-                    .id(inv.getId())
-                    .name(inv.getAssetName())
-                    .symbol(inv.getSymbol())
-                    .domain("INVESTMENT")
-                    .categoryCode(inv.getCategory() != null ? inv.getCategory().getCode() : "STOCKS")
-                    .categoryName(inv.getCategory() != null ? inv.getCategory().getName() : "Investment")
-                    .amount(inv.getAmount())
-                    .quantity(inv.getQuantity())
-                    .unitPrice(inv.getUnitPrice())
-                    .tags(inv.getTags())
-                    .date(inv.getInvestmentDate())
-                    .build());
+            if (!inv.isSold()) {
+                assets.add(AssetItemVO.builder()
+                        .id(inv.getId())
+                        .name(inv.getAssetName())
+                        .symbol(inv.getCategory() != null ? inv.getCategory().getCode() : "INVESTMENT")
+                        .domain("INVESTMENT")
+                        .categoryCode(inv.getCategory() != null ? inv.getCategory().getCode() : "STOCKS")
+                        .categoryName(inv.getCategory() != null ? inv.getCategory().getName() : "Investment")
+                        .amount(inv.getBuyingPrice())
+                        .quantity(inv.getQuantity())
+                        .unitPrice(inv.getUnitPrice())
+                        .tags(inv.getTags())
+                        .date(inv.getInvestmentDate())
+                        .build());
+            }
         }
 
         return assets;
@@ -69,7 +71,8 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional(readOnly = true)
     public double calculateTotalAssets() {
-        List<AssetItemVO> assets = getAssets();
-        return assets.stream().mapToDouble(AssetItemVO::getAmount).sum();
+        return getAssets().stream()
+                .mapToDouble(AssetItemVO::getAmount)
+                .sum();
     }
 }

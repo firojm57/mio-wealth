@@ -8,7 +8,7 @@ import { ToastService } from '../../services/toast.service';
   imports: [CommonModule],
   template: `
     @if (toastService.currentToast(); as toast) {
-      <div class="fixed bottom-6 right-6 z-50 max-w-md w-full px-4 animate-fade-in pointer-events-auto">
+      <div class="fixed top-6 right-6 z-50 max-w-md w-full px-4 animate-fade-in pointer-events-auto">
         <div
           class="flex items-center justify-between p-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300"
           [class.bg-card]="true"
@@ -24,9 +24,9 @@ import { ToastService } from '../../services/toast.service';
                 </svg>
               </div>
             } @else if (toast.type === 'danger') {
-              <div class="w-8 h-8 rounded-full bg-feedback-danger/15 text-feedback-danger flex items-center justify-center shrink-0">
+              <div class="w-8 h-8 rounded-full bg-feedback-danger/15 text-feedback-danger flex items-center justify-center shrink-0 font-bold text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
             } @else {

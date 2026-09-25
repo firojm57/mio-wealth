@@ -38,10 +38,13 @@ import { ToastService } from '../../services/toast.service';
                 type="text"
                 name="firstName"
                 [(ngModel)]="firstName"
-                required
                 placeholder="e.g. Alex"
-                class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+                class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+                [ngClass]="formSubmitted() && !firstName.trim() ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
               />
+              @if (formSubmitted() && !firstName.trim()) {
+                <p class="text-[11px] font-medium text-feedback-danger mt-1">First name is required</p>
+              }
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-text-secondary mb-1 uppercase tracking-wider">
@@ -51,10 +54,13 @@ import { ToastService } from '../../services/toast.service';
                 type="text"
                 name="lastName"
                 [(ngModel)]="lastName"
-                required
                 placeholder="e.g. Smith"
-                class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+                class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+                [ngClass]="formSubmitted() && !lastName.trim() ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
               />
+              @if (formSubmitted() && !lastName.trim()) {
+                <p class="text-[11px] font-medium text-feedback-danger mt-1">Last name is required</p>
+              }
             </div>
           </div>
 
@@ -67,10 +73,15 @@ import { ToastService } from '../../services/toast.service';
               type="email"
               name="email"
               [(ngModel)]="email"
-              required
               placeholder="e.g. user@example.com"
-              class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+              class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+              [ngClass]="formSubmitted() && (!email.trim() || !isValidEmail(email)) ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && !email.trim()) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Email is required</p>
+            } @else if (formSubmitted() && !isValidEmail(email)) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Please enter a valid email address</p>
+            }
           </div>
 
           <!-- User ID -->
@@ -82,10 +93,13 @@ import { ToastService } from '../../services/toast.service';
               type="text"
               name="userId"
               [(ngModel)]="userId"
-              required
               placeholder="e.g. alex_smith"
-              class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+              class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+              [ngClass]="formSubmitted() && !userId.trim() ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && !userId.trim()) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">User ID is required</p>
+            }
           </div>
 
           <!-- Password -->
@@ -97,10 +111,13 @@ import { ToastService } from '../../services/toast.service';
               type="password"
               name="password"
               [(ngModel)]="password"
-              required
               placeholder="At least 6 characters"
-              class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+              class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+              [ngClass]="formSubmitted() && password.length < 6 ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && password.length < 6) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Password must be at least 6 characters long</p>
+            }
           </div>
 
           <!-- Confirm Password -->
@@ -112,16 +129,21 @@ import { ToastService } from '../../services/toast.service';
               type="password"
               name="confirmPassword"
               [(ngModel)]="confirmPassword"
-              required
               placeholder="Repeat your password"
-              class="w-full px-3.5 py-2.5 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-all text-xs font-medium"
+              class="w-full px-3.5 py-2.5 bg-background border rounded-xl text-text-primary placeholder:text-text-secondary/50 focus:outline-none transition-all text-xs font-medium"
+              [ngClass]="formSubmitted() && (confirmPassword !== password || !confirmPassword) ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20' : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
             />
+            @if (formSubmitted() && !confirmPassword) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Please confirm your password</p>
+            } @else if (formSubmitted() && confirmPassword !== password) {
+              <p class="text-[11px] font-medium text-feedback-danger mt-1">Passwords do not match</p>
+            }
           </div>
 
           <!-- Submit Button -->
           <button
             type="submit"
-            [disabled]="isLoading() || !isFormValid()"
+            [disabled]="isLoading()"
             class="w-full mt-4 py-3 px-4 bg-text-primary text-card font-semibold text-sm rounded-xl hover:opacity-90 active:scale-98 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
             @if (isLoading()) {
@@ -161,12 +183,17 @@ export class SignupComponent {
   confirmPassword = '';
 
   readonly isLoading = signal<boolean>(false);
+  readonly formSubmitted = signal<boolean>(false);
+
+  isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  }
 
   isFormValid(): boolean {
     return (
       !!this.firstName.trim() &&
       !!this.lastName.trim() &&
-      !!this.email.trim() &&
+      this.isValidEmail(this.email) &&
       !!this.userId.trim() &&
       this.password.length >= 6 &&
       this.password === this.confirmPassword
@@ -174,14 +201,9 @@ export class SignupComponent {
   }
 
   onSubmit(): void {
+    this.formSubmitted.set(true);
+
     if (!this.isFormValid()) {
-      if (this.password !== this.confirmPassword) {
-        this.toastService.showToast('Passwords do not match. Please re-enter.', 'danger');
-      } else if (this.password.length < 6) {
-        this.toastService.showToast('Password must be at least 6 characters long.', 'danger');
-      } else {
-        this.toastService.showToast('Please complete all required fields.', 'danger');
-      }
       return;
     }
 

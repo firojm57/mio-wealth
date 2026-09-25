@@ -1,114 +1,297 @@
-<div class="space-y-6 md:space-y-8 animate-fade-in pb-16 sm:pb-24 lg:pb-8">
-  <!-- Page Header -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 border-b border-border/40 pb-5">
+<div class="space-y-6 md:space-y-8 animate-fade-in">
+  <!-- Top Bar: Header Title & Action Buttons -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-text-primary">{{ 'NAV.INVESTMENTS' | translate }}</h1>
-      <p class="text-sm font-medium text-text-secondary mt-1">Track and manage your asset distributions and returns.</p>
+      <h1 class="text-3xl font-bold tracking-tight text-text-primary">
+        Portfolio &amp; Investments
+      </h1>
+      <p class="font-medium text-sm text-text-secondary mt-1">
+        Track active holdings, current valuation, realized returns, and capital performance
+      </p>
     </div>
 
-    <!-- Actions -->
-    <div class="flex items-center space-x-2.5">
-      <button (click)="refreshData()" class="flex items-center space-x-2 px-4 py-2 bg-card hover:bg-background border border-border rounded-full font-medium text-xs text-text-primary shadow-sm cursor-pointer transition-colors duration-300">
-        <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-performance"></use></svg>
-        <span>Refresh</span>
+    <!-- Action Pills -->
+    <div class="flex items-center space-x-3">
+      <button
+        type="button"
+        (click)="openAddCategoryModal()"
+        class="bg-card border border-border text-text-primary px-4 py-2 rounded-full font-semibold text-xs transition-all duration-300 hover:bg-background flex items-center space-x-1.5 shadow-sm cursor-pointer"
+      >
+        <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-plus"></use></svg>
+        <span>New Category</span>
       </button>
-      <button (click)="openCreateModal()" class="flex items-center space-x-2 px-5 py-2 bg-accent-primary hover:bg-accent-primary/90 text-card rounded-full font-semibold text-xs shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300">
+
+      <button
+        type="button"
+        (click)="openCreateModal()"
+        class="bg-accent-primary text-card px-4 py-2 rounded-full font-semibold text-xs transition-all duration-300 hover:bg-accent-primary/90 flex items-center space-x-1.5 shadow-md shadow-accent-primary/10 cursor-pointer"
+      >
         <svg class="w-4 h-4"><use href="assets/icons.svg#icon-plus"></use></svg>
-        <span>Add Transaction</span>
+        <span>Add Investment</span>
       </button>
     </div>
   </div>
 
-  <!-- Summary Card -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    <!-- Value -->
-    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Portfolio Value</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalValue | currency:'INR':'symbol':'1.0-0' }}</div>
-      <div class="flex items-center space-x-1.5 mt-2">
-        <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
-          <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
-          <span>{{ totalValue > 0 ? '+0.0%' : '0.0%' }}</span>
+  <!-- Summary KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <!-- Active Portfolio Valuation -->
+    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Current Portfolio Value</span>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
+        {{ totalCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="flex items-center justify-between text-xs mt-2.5">
+        <span class="text-text-secondary">Cost: {{ totalInvested() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
+        <span
+          class="font-bold flex items-center space-x-0.5"
+          [ngClass]="totalUnrealizedPL() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+        >
+          <span>{{ (totalUnrealizedPL() >= 0 ? '+' : '') + (totalUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
+          <span class="text-[10px]">({{ (totalUnrealizedReturnPct() >= 0 ? '+' : '') + totalUnrealizedReturnPct() }}%)</span>
         </span>
-        <span class="text-xs font-medium text-text-secondary">All-Time Yield</span>
       </div>
     </div>
 
-    <!-- Cost Basis -->
-    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Total Invested</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalInvested | currency:'INR':'symbol':'1.0-0' }}</div>
-      <div class="text-xs font-medium text-text-secondary mt-3">Initial capital cost basis</div>
+    <!-- Realized Profit / Loss -->
+    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Realized P&amp;L</span>
+      <div
+        class="text-3xl font-extrabold tracking-tight mt-2.5"
+        [ngClass]="realizedProfitLoss() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+      >
+        {{ (realizedProfitLoss() >= 0 ? '+' : '') + (realizedProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
+      </div>
+      <div class="flex items-center space-x-1.5 mt-2.5">
+        <span
+          class="px-2 py-0.5 rounded-full text-xs font-semibold flex items-center space-x-0.5"
+          [ngClass]="realizedProfitLoss() >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
+        >
+          <span>{{ realizedProfitLoss() >= 0 ? 'Profitable' : 'Deficit' }}</span>
+        </span>
+        <span class="text-xs font-medium text-text-secondary">{{ soldCount() }} liquidated assets</span>
+      </div>
     </div>
 
-    <!-- Holdings Count -->
-    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Active Assets</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ holdings.length }}</div>
-      <div class="text-xs font-medium text-text-secondary mt-3">Across diversified categories</div>
+    <!-- Total Sales Proceeds -->
+    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Sales Proceeds</span>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
+        {{ realizedValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-secondary"></span>
+        <span>Gross realized value</span>
+      </div>
+    </div>
+
+    <!-- Asset Classes -->
+    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Asset Classes</span>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
+        {{ categories.length }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-primary"></span>
+        <span>Active categories cataloged</span>
+      </div>
     </div>
   </div>
 
-  <!-- Holdings Table -->
-  <div class="bg-card border border-border rounded-3xl overflow-hidden shadow-sm">
-    <div class="px-6 py-5 border-b border-border/40 flex items-center justify-between">
-      <h3 class="font-bold text-text-primary uppercase tracking-wider text-sm">Asset Holdings</h3>
-      <button (click)="refreshData()" class="text-xs font-semibold text-accent-secondary hover:underline cursor-pointer flex items-center space-x-0.5">
-        <span>Refresh Feed</span>
-      </button>
+  <!-- Holdings Table Card -->
+  <div class="bg-card border border-border rounded-3xl shadow-sm overflow-hidden transition-colors duration-300">
+    <!-- Filter Tabs Header -->
+    <div class="p-6 border-b border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-background/30">
+      <div class="flex items-center space-x-2 overflow-x-auto">
+        <button
+          type="button"
+          (click)="tableFilter.set('ALL')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap"
+          [ngClass]="tableFilter() === 'ALL'
+            ? 'bg-accent-primary text-card shadow-sm'
+            : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
+        >
+          All Assets ({{ holdings.length }})
+        </button>
+        <button
+          type="button"
+          (click)="tableFilter.set('ACTIVE')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap"
+          [ngClass]="tableFilter() === 'ACTIVE'
+            ? 'bg-accent-primary text-card shadow-sm'
+            : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
+        >
+          Active Holdings ({{ activeCount() }})
+        </button>
+        <button
+          type="button"
+          (click)="tableFilter.set('SOLD')"
+          class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 cursor-pointer whitespace-nowrap"
+          [ngClass]="tableFilter() === 'SOLD'
+            ? 'bg-accent-primary text-card shadow-sm'
+            : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
+        >
+          Sold / Realized ({{ soldCount() }})
+        </button>
+      </div>
+
+      <div class="text-xs font-medium text-text-secondary whitespace-nowrap">
+        Currency: <span class="font-bold text-text-primary">{{ dashboardService.currencyCode() }} ({{ dashboardService.currencySymbol() }})</span>
+      </div>
     </div>
 
-    <!-- Responsive Scroll Wrapper -->
+    <!-- Table Content -->
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse">
         <thead>
-          <tr class="border-b border-border/20 text-xs font-bold text-text-secondary uppercase tracking-wider bg-background/50">
-            <th class="px-6 py-4">Asset</th>
-            <th class="px-6 py-4">Allocation</th>
-            <th class="px-6 py-4">Price</th>
-            <th class="px-6 py-4">Shares</th>
-            <th class="px-6 py-4">Current Value</th>
-            <th class="px-6 py-4 text-right">Return (YTD)</th>
-            <th class="px-6 py-4 text-center">Actions</th>
+          <tr class="border-b border-border/40 text-[11px] font-bold uppercase tracking-wider text-text-secondary bg-background/50">
+            <th class="py-3.5 px-6">Asset Name</th>
+            <th class="py-3.5 px-6">Category</th>
+            <th class="py-3.5 px-6">Cost Basis</th>
+            <th class="py-3.5 px-6">Current Valuation / P&amp;L</th>
+            <th class="py-3.5 px-6">Status</th>
+            <th class="py-3.5 px-6 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-border/20 text-xs font-semibold text-text-primary">
-          @for (hold of holdings; track hold.id) {
-            <tr class="hover:bg-background/25 transition-colors duration-200">
-              <td class="px-6 py-4.5 flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-full bg-accent-secondary/10 text-accent-secondary flex items-center justify-center font-bold text-xs">
-                  {{ hold.symbol ? hold.symbol[0] : 'I' }}
-                </div>
-                <div>
-                  <div class="font-bold text-text-primary flex items-center space-x-1.5">
-                    <span>{{ hold.name }}</span>
-                    @if (hold.tags) {
-                      <span class="text-[9px] px-1.5 py-0.2 rounded bg-accent-secondary/10 text-accent-secondary">{{ hold.tags }}</span>
+        <tbody class="divide-y divide-border/30 text-sm">
+          @for (holding of filteredHoldings(); track holding.id) {
+            <tr class="hover:bg-background/40 transition-colors">
+              <!-- Asset Name -->
+              <td class="py-4 px-6">
+                <div class="flex items-center space-x-3">
+                  <div class="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-text-secondary shrink-0">
+                    <svg class="w-4 h-4"><use [attr.href]="'assets/icons.svg#' + getDomainIcon('INVESTMENT')"></use></svg>
+                  </div>
+                  <div>
+                    <div class="font-bold text-sm text-text-primary">{{ holding.name }}</div>
+                    @if (holding.tags) {
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        @for (tag of holding.tags.split(','); track tag) {
+                          <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-card border border-border text-text-secondary">
+                            {{ tag.trim() }}
+                          </span>
+                        }
+                      </div>
+                    }
+                    @if (holding.remarks) {
+                      <div class="font-normal text-xs text-text-secondary truncate max-w-xs mt-0.5">{{ holding.remarks }}</div>
                     }
                   </div>
-                  <div class="text-[10px] text-text-secondary font-medium">{{ hold.symbol }} &bull; {{ hold.categoryName }}</div>
                 </div>
               </td>
-              <td class="px-6 py-4.5">
-                <div class="flex items-center space-x-2">
-                  <span class="font-bold">{{ (totalValue > 0 ? (hold.amount / totalValue) : 0) | percent:'1.0-1' }}</span>
-                  <div class="w-16 h-1.5 bg-background rounded-full overflow-hidden hidden sm:block">
-                    <div class="h-full bg-accent-secondary rounded-full" [style.width.%]="(totalValue > 0 ? (hold.amount / totalValue) * 100 : 0)"></div>
+
+              <!-- Category -->
+              <td class="py-4 px-6">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-background border border-border text-text-secondary">
+                  {{ holding.categoryName || holding.categoryCode }}
+                </span>
+              </td>
+
+              <!-- Cost Basis -->
+              <td class="py-4 px-6">
+                <div class="font-black text-sm text-text-primary">
+                  {{ holding.buyingPrice | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+                </div>
+                <div class="font-medium text-[11px] text-text-secondary mt-0.5 flex items-center space-x-1.5">
+                  @if (holding.quantity > 1) {
+                    <span>{{ holding.quantity }} units @ {{ holding.unitPrice | currency:dashboardService.currencyCode():'symbol':'1.0-0' }} • </span>
+                  }
+                  <span>{{ holding.investmentDate | date:'mediumDate' }}</span>
+                </div>
+              </td>
+
+              <!-- Current Valuation & Unrealized / Realized P&L -->
+              <td class="py-4 px-6">
+                @if (!holding.isSold) {
+                  <div>
+                    <div class="font-black text-sm text-text-primary">
+                      {{ (holding.currentValue ?? holding.buyingPrice) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+                    </div>
+                    <div class="mt-0.5">
+                      <span
+                        class="inline-flex items-center space-x-1 px-2 py-0.2 rounded-full text-[11px] font-bold"
+                        [ngClass]="(holding.unrealizedProfitLoss ?? 0) >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
+                      >
+                        <span>{{ ((holding.unrealizedProfitLoss ?? 0) >= 0 ? '+' : '') + (holding.unrealizedProfitLoss ?? 0 | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
+                        <span class="text-[10px] font-semibold opacity-85">
+                          ({{ ((holding.currentPercentageChange ?? 0) >= 0 ? '+' : '') + (holding.currentPercentageChange ?? 0 | number:'1.1-1') }}%)
+                        </span>
+                      </span>
+                    </div>
                   </div>
-                </div>
+                } @else if (holding.sellingPrice != null) {
+                  <div>
+                    <div class="text-xs font-semibold text-text-secondary">
+                      Sold for {{ holding.sellingPrice | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+                    </div>
+                    <div class="mt-0.5">
+                      <span
+                        class="inline-flex items-center space-x-1 px-2 py-0.2 rounded-full text-[11px] font-bold"
+                        [ngClass]="(holding.profitLoss ?? 0) >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
+                      >
+                        <span>{{ ((holding.profitLoss ?? 0) >= 0 ? '+' : '') + (holding.profitLoss | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
+                        <span class="text-[10px] font-semibold opacity-85">
+                          ({{ ((holding.returnPercentage ?? 0) >= 0 ? '+' : '') + (holding.returnPercentage | number:'1.1-1') }}%)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                } @else {
+                  <span class="text-text-secondary/60 text-xs">—</span>
+                }
               </td>
-              <td class="px-6 py-4.5">{{ hold.unitPrice | currency:'INR':'symbol':'1.2-2' }}</td>
-              <td class="px-6 py-4.5">{{ hold.quantity }}</td>
-              <td class="px-6 py-4.5 font-bold">{{ hold.amount | currency:'INR':'symbol':'1.0-0' }}</td>
-              <td class="px-6 py-4.5 text-right font-bold" [ngClass]="hold.returnRate >= 0 ? 'text-feedback-success' : 'text-feedback-danger'">
-                {{ hold.returnRate | percent:'1.1-2' }}
+
+              <!-- Status Badge -->
+              <td class="py-4 px-6">
+                @if (!holding.isSold) {
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-feedback-success/10 text-feedback-success">
+                    <span class="w-1.5 h-1.5 rounded-full bg-feedback-success mr-1.5"></span>
+                    ACTIVE
+                  </span>
+                } @else {
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-border/40 text-text-secondary">
+                    <span class="w-1.5 h-1.5 rounded-full bg-text-secondary mr-1.5"></span>
+                    SOLD
+                  </span>
+                }
               </td>
-              <td class="px-6 py-4.5 text-center">
-                <div class="flex items-center justify-center space-x-2">
-                  <button (click)="openEditModal(hold)" title="Edit Investment" class="p-1.5 rounded-lg hover:bg-background text-text-secondary hover:text-accent-primary cursor-pointer transition-colors duration-200">
+
+              <!-- Actions -->
+              <td class="py-4 px-6 text-right">
+                <div class="flex items-center justify-end space-x-2">
+                  @if (!holding.isSold) {
+                    <button
+                      type="button"
+                      (click)="openUpdatePercentageModal(holding)"
+                      class="px-2.5 py-1 rounded-full text-xs font-semibold bg-card border border-border hover:bg-background text-text-primary cursor-pointer transition-colors duration-200 shadow-xs"
+                      title="Update Current % Change"
+                    >
+                      Update %
+                    </button>
+                    <button
+                      type="button"
+                      (click)="openQuickSoldModal(holding)"
+                      class="px-2.5 py-1 rounded-full text-xs font-semibold bg-feedback-success/10 hover:bg-feedback-success/20 text-feedback-success cursor-pointer transition-colors duration-200"
+                      title="Mark as Sold"
+                    >
+                      Mark Sold
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    (click)="openEditModal(holding)"
+                    class="p-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-background cursor-pointer transition-colors duration-200"
+                    title="Edit Investment"
+                  >
                     <svg class="w-4 h-4"><use href="assets/icons.svg#icon-edit"></use></svg>
                   </button>
-                  <button (click)="openDeleteModal(hold)" title="Delete Investment" class="p-1.5 rounded-lg hover:bg-feedback-danger/10 text-text-secondary hover:text-feedback-danger cursor-pointer transition-colors duration-200">
+
+                  <button
+                    type="button"
+                    (click)="openDeleteModal(holding)"
+                    class="p-1.5 rounded-full text-text-secondary hover:text-feedback-danger hover:bg-feedback-danger/10 cursor-pointer transition-colors duration-200"
+                    title="Delete Investment"
+                  >
                     <svg class="w-4 h-4"><use href="assets/icons.svg#icon-trash"></use></svg>
                   </button>
                 </div>
@@ -116,12 +299,12 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="px-6 py-12 text-center text-text-secondary">
-                <div class="flex flex-col items-center justify-center space-y-2">
-                  <svg class="w-8 h-8 text-text-secondary/40"><use href="assets/icons.svg#icon-investments"></use></svg>
-                  <span class="font-bold text-sm text-text-primary">No investment holdings recorded yet</span>
-                  <span class="text-xs text-text-secondary">Click "Add Transaction" to record your first asset.</span>
+              <td colspan="6" class="p-12 text-center">
+                <div class="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center mx-auto mb-3 text-text-secondary">
+                  <svg class="w-6 h-6"><use href="assets/icons.svg#icon-investments"></use></svg>
                 </div>
+                <p class="font-bold text-sm text-text-primary">No investment records found</p>
+                <p class="text-xs font-medium text-text-secondary mt-1">Record your first holding using the 'Add Investment' button above.</p>
               </td>
             </tr>
           }
@@ -129,124 +312,576 @@
       </table>
     </div>
   </div>
-
-  <!-- Create / Edit Modal -->
-  @if (isFormOpen()) {
-    <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-card border border-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl animate-fade-in relative max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between border-b border-border/40 pb-4 mb-6">
-          <h2 class="text-lg font-bold text-text-primary">
-            {{ editingId() ? 'Edit Investment Transaction' : 'Add Investment Transaction' }}
-          </h2>
-          <button (click)="closeFormModal()" class="p-1 rounded-full hover:bg-background text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
-            <svg class="w-5 h-5"><use href="assets/icons.svg#icon-close"></use></svg>
-          </button>
-        </div>
-
-        <form (ngSubmit)="saveInvestment()" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Symbol -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Symbol *</label>
-              <input type="text" name="symbol" [(ngModel)]="formData.symbol" placeholder="e.g. AAPL, RELIANCE" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary uppercase" required />
-            </div>
-
-            <!-- Category Dropdown (dynamically loaded from DB) -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Category *</label>
-              <select name="categoryCode" [(ngModel)]="formData.categoryCode" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary cursor-pointer" required>
-                @for (cat of categories; track cat.code) {
-                  <option [value]="cat.code">{{ cat.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <!-- Asset Name -->
-          <div>
-            <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Asset Name *</label>
-            <input type="text" name="assetName" [(ngModel)]="formData.assetName" placeholder="e.g. Apple Inc, Reliance Industries" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- Quantity -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Quantity *</label>
-              <input type="number" name="quantity" [(ngModel)]="formData.quantity" (input)="onAmountOrQuantityChange()" min="1" step="1" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
-            </div>
-
-            <!-- Total Amount -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Total Amount (₹) *</label>
-              <input type="number" name="amount" [(ngModel)]="formData.amount" (input)="onAmountOrQuantityChange()" min="0.01" step="any" placeholder="0.00" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" required />
-            </div>
-
-            <!-- Unit Price -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Unit Price (₹)</label>
-              <input type="number" name="unitPrice" [(ngModel)]="formData.unitPrice" min="0" step="any" placeholder="Calculated" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <!-- Action -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Action</label>
-              <select name="action" [(ngModel)]="formData.action" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary cursor-pointer">
-                <option value="BUY">BUY</option>
-                <option value="SELL">SELL</option>
-              </select>
-            </div>
-
-            <!-- Tags -->
-            <div>
-              <label class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Tags</label>
-              <input type="text" name="tags" [(ngModel)]="formData.tags" placeholder="e.g. TECH, LONG_TERM" class="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary" />
-            </div>
-          </div>
-
-          <!-- Buttons -->
-          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-border/40 mt-6">
-            <button type="button" (click)="closeFormModal()" class="px-5 py-2 rounded-full border border-border hover:bg-background text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
-              Cancel
-            </button>
-            <button type="submit" [disabled]="isSubmitting()" class="flex items-center space-x-2 px-6 py-2 rounded-full bg-accent-primary hover:bg-accent-primary/90 text-card text-xs font-semibold shadow-md shadow-accent-primary/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              @if (isSubmitting()) {
-                <span>Saving...</span>
-              } @else {
-                <span>{{ editingId() ? 'Update Investment' : 'Save Investment' }}</span>
-              }
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-
-  <!-- Delete Confirmation Modal (Accessible, No native confirm/alert) -->
-  @if (isDeleteOpen()) {
-    <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div class="bg-card border border-border rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl animate-fade-in">
-        <div class="w-12 h-12 rounded-2xl bg-feedback-danger/10 text-feedback-danger flex items-center justify-center mb-4">
-          <svg class="w-6 h-6"><use href="assets/icons.svg#icon-trash"></use></svg>
-        </div>
-        <h3 class="text-base font-bold text-text-primary mb-2">Delete Investment Holding</h3>
-        <p class="text-xs text-text-secondary leading-relaxed mb-6">
-          Are you sure you want to delete <strong class="text-text-primary">{{ targetHolding()?.name }}</strong> ({{ targetHolding()?.symbol }})? This action will permanently remove this record from your tenant data.
-        </p>
-        <div class="flex items-center justify-end space-x-3">
-          <button type="button" (click)="closeDeleteModal()" class="px-5 py-2 rounded-full border border-border hover:bg-background text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer transition-colors">
-            Cancel
-          </button>
-          <button type="button" (click)="confirmDelete()" [disabled]="isSubmitting()" class="px-6 py-2 rounded-full bg-feedback-danger hover:bg-feedback-danger/90 text-white text-xs font-semibold shadow-md shadow-feedback-danger/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            @if (isSubmitting()) {
-              <span>Deleting...</span>
-            } @else {
-              <span>Delete</span>
-            }
-          </button>
-        </div>
-      </div>
-    </div>
-  }
 </div>
+
+<!-- ======================================================== -->
+<!-- MODAL 1: Create & Edit Investment Modal (with Category Tabs) -->
+<!-- ======================================================== -->
+<app-modal-dialog
+  [isOpen]="isFormOpen()"
+  [title]="editingId() ? 'Edit Investment' : 'Add Investment'"
+  [subtitle]="editingId() ? 'Update asset details or toggle liquidation status' : 'Select category tab, record cost, and track your asset'"
+  maxWidth="3xl"
+  (close)="closeFormModal()"
+>
+  <div modal-body class="space-y-4">
+    <!-- Category Tabs (Only selectable in Create Mode, or switchable) -->
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-bold uppercase tracking-wider text-text-secondary">Asset Category</label>
+        <button
+          type="button"
+          (click)="openAddCategoryModal()"
+          class="text-xs font-semibold text-accent-secondary hover:underline cursor-pointer flex items-center space-x-1"
+        >
+          <svg class="w-3.5 h-3.5"><use href="assets/icons.svg#icon-plus"></use></svg>
+          <span>New Category</span>
+        </button>
+      </div>
+
+      <!-- Tab Buttons -->
+      <div class="flex items-center flex-wrap gap-2 pb-1">
+        @for (cat of categories; track cat.code) {
+          <button
+            type="button"
+            (click)="selectCategoryTab(cat.code)"
+            class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer shrink-0"
+            [ngClass]="selectedCategoryTab() === cat.code
+              ? 'bg-accent-primary text-card shadow-sm'
+              : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
+          >
+            {{ cat.name }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Asset Name Input with Inline Validation -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Asset / Holding Name *</label>
+      <input
+        type="text"
+        [(ngModel)]="formData.assetName"
+        placeholder="Enter asset or holding name"
+        class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm focus:outline-none transition-colors"
+        [ngClass]="formSubmitted() && !formData.assetName.trim()
+          ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+          : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+      />
+      @if (formSubmitted() && !formData.assetName.trim()) {
+        <p class="text-[11px] font-medium text-feedback-danger mt-1">Asset name is required.</p>
+      }
+    </div>
+
+    <!-- Price & Quantity Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <!-- Quantity -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Quantity (Units)</label>
+        <input
+          type="number"
+          [(ngModel)]="formData.quantity"
+          (input)="onQuantityOrUnitPriceChange()"
+          min="1"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+        />
+      </div>
+
+      <!-- Unit Price -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+          Unit Price ({{ dashboardService.currencySymbol() }})
+        </label>
+        <input
+          type="number"
+          [(ngModel)]="formData.unitPrice"
+          (input)="onQuantityOrUnitPriceChange()"
+          min="0"
+          step="any"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+        />
+      </div>
+
+      <!-- Total Buying Price with Inline Validation -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+          Total Cost * ({{ dashboardService.currencySymbol() }})
+        </label>
+        <input
+          type="number"
+          [(ngModel)]="formData.buyingPrice"
+          (input)="onBuyingPriceChange()"
+          min="0.01"
+          step="any"
+          class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm font-bold focus:outline-none transition-colors"
+          [ngClass]="formSubmitted() && (!formData.buyingPrice || formData.buyingPrice <= 0)
+            ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+            : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+        />
+        @if (formSubmitted() && (!formData.buyingPrice || formData.buyingPrice <= 0)) {
+          <p class="text-[11px] font-medium text-feedback-danger mt-1">Total cost must be greater than 0.</p>
+        }
+      </div>
+    </div>
+
+    <!-- Current % Change (Unrealized Valuation Input) -->
+    @if (!formData.isSold) {
+      <div class="p-3.5 rounded-2xl bg-background/50 border border-border space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-text-secondary">
+            Current % Change
+          </label>
+          <span class="text-[11px] text-text-secondary">E.g. +12.5% or -4.0%</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+          <div class="relative">
+            <input
+              type="number"
+              [(ngModel)]="formData.currentPercentageChange"
+              step="any"
+              placeholder="0.0"
+              class="w-full px-4 py-2 rounded-xl border border-border bg-card text-text-primary text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+            />
+            <span class="absolute right-3.5 top-2.5 text-xs font-bold text-text-secondary">%</span>
+          </div>
+
+          <!-- Live valuation preview -->
+          @if (getFormCurrentValue() !== null) {
+            <div class="text-xs font-semibold">
+              <span class="text-text-secondary">Valuation: </span>
+              <span class="text-text-primary font-bold">{{ getFormCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
+              <span
+                class="ml-1.5 font-bold"
+                [ngClass]="(getFormUnrealizedPL() ?? 0) >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+              >
+                ({{ ((getFormUnrealizedPL() ?? 0) >= 0 ? '+' : '') + (getFormUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }})
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Purchase Date & Tags -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Purchase Date *</label>
+        <input
+          type="date"
+          [(ngModel)]="formData.investmentDate"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+        />
+      </div>
+
+      <!-- Interactive Multi-select Tag Component -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Tags (Dropdown &amp; Custom)</label>
+        <app-tag-input
+          [(tagsString)]="formData.tags"
+          placeholder="Select or type tags..."
+        ></app-tag-input>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Remarks / Details (Optional)</label>
+      <input
+        type="text"
+        [(ngModel)]="formData.remarks"
+        placeholder="Enter notes, folio number, or transaction details (optional)"
+        class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+      />
+    </div>
+
+    <!-- Sold Toggle Section -->
+    <div class="pt-2 border-t border-border/40">
+      <div class="flex items-center justify-between p-3.5 rounded-2xl bg-background/50 border border-border">
+        <div>
+          <span class="text-sm font-bold text-text-primary">Asset Sold / Liquidated?</span>
+          <p class="text-xs font-medium text-text-secondary mt-0.5">Toggle this on if you have sold or liquidated this holding</p>
+        </div>
+
+        <button
+          type="button"
+          (click)="toggleSoldInForm()"
+          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none"
+          [ngClass]="formData.isSold ? 'bg-accent-primary' : 'bg-border'"
+        >
+          <span
+            class="inline-block h-4 w-4 transform rounded-full bg-card transition-transform shadow-sm"
+            [ngClass]="formData.isSold ? 'translate-x-6' : 'translate-x-1'"
+          ></span>
+        </button>
+      </div>
+
+      <!-- Sold Fields (Conditional on toggle) -->
+      @if (formData.isSold) {
+        <div class="mt-4 p-4 rounded-2xl border border-accent-secondary/30 bg-accent-secondary/5 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                Selling Price * ({{ dashboardService.currencySymbol() }})
+              </label>
+              <input
+                type="number"
+                [(ngModel)]="formData.sellingPrice"
+                min="0.01"
+                step="any"
+                placeholder="Total amount received"
+                class="w-full px-4 py-2.5 rounded-xl border bg-card text-text-primary text-sm font-bold focus:outline-none transition-colors"
+                [ngClass]="formSubmitted() && (!formData.sellingPrice || formData.sellingPrice <= 0)
+                  ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+                  : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+              />
+              @if (formSubmitted() && (!formData.sellingPrice || formData.sellingPrice <= 0)) {
+                <p class="text-[11px] font-medium text-feedback-danger mt-1">Selling price is required for sold holding.</p>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Sale Date *</label>
+              <input
+                type="date"
+                [(ngModel)]="formData.soldDate"
+                class="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+              />
+            </div>
+          </div>
+
+          <!-- Live P&L Preview in Form -->
+          @if (getFormProfitLoss() !== null) {
+            <div class="p-3.5 rounded-xl bg-card border border-border flex items-center justify-between shadow-xs">
+              <span class="text-xs font-semibold text-text-secondary">Projected Realized Return:</span>
+              <div
+                class="text-sm font-extrabold flex items-center space-x-1.5"
+                [ngClass]="(getFormProfitLoss() ?? 0) >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+              >
+                <span>{{ ((getFormProfitLoss() ?? 0) >= 0 ? '+' : '') + (getFormProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
+                <span class="text-xs font-semibold">({{ ((getFormReturnPercentage() ?? 0) >= 0 ? '+' : '') + getFormReturnPercentage() }}%)</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div modal-footer class="flex items-center justify-end space-x-3 w-full">
+    <button
+      type="button"
+      (click)="closeFormModal()"
+      [disabled]="isSubmitting()"
+      class="px-5 py-2 rounded-full font-medium text-xs text-text-primary bg-card hover:bg-background border border-border shadow-sm cursor-pointer transition-colors duration-300 disabled:opacity-50"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      (click)="saveInvestment()"
+      [disabled]="isSubmitting()"
+      class="px-6 py-2 rounded-full font-semibold text-xs bg-accent-primary hover:bg-accent-primary/90 text-card shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300 flex items-center space-x-1.5 disabled:opacity-50"
+    >
+      @if (isSubmitting()) {
+        <svg class="w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      }
+      <span>{{ editingId() ? 'Save Changes' : 'Record Investment' }}</span>
+    </button>
+  </div>
+</app-modal-dialog>
+
+<!-- ======================================================== -->
+<!-- MODAL 2: Quick Action "Mark as Sold" Modal               -->
+<!-- ======================================================== -->
+<app-modal-dialog
+  [isOpen]="isQuickSoldOpen()"
+  title="Mark Investment as Sold"
+  subtitle="Record asset sale proceeds and realize profit or loss"
+  maxWidth="md"
+  (close)="closeQuickSoldModal()"
+>
+  <div modal-body class="space-y-4">
+    <!-- Asset Summary Card -->
+    <div class="p-4 rounded-2xl bg-background/60 border border-border flex items-center justify-between">
+      <div>
+        <div class="font-bold text-text-primary text-sm">{{ quickSoldHolding()?.name }}</div>
+        <div class="text-xs font-medium text-text-secondary mt-0.5">
+          Bought for {{ quickSoldHolding()?.buyingPrice | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+        </div>
+      </div>
+      <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-card border border-border text-text-secondary">
+        {{ quickSoldHolding()?.categoryName }}
+      </span>
+    </div>
+
+    <!-- Selling Price Input with Inline Validation -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+        Selling Price * ({{ dashboardService.currencySymbol() }})
+      </label>
+      <input
+        type="number"
+        [(ngModel)]="quickSoldData.sellingPrice"
+        min="0.01"
+        step="any"
+        placeholder="Enter total sale amount received"
+        class="w-full px-4 py-2.5 rounded-xl border bg-card text-text-primary text-sm font-bold focus:outline-none transition-colors"
+        [ngClass]="quickSoldSubmitted() && (!quickSoldData.sellingPrice || quickSoldData.sellingPrice <= 0)
+          ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+          : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+      />
+      @if (quickSoldSubmitted() && (!quickSoldData.sellingPrice || quickSoldData.sellingPrice <= 0)) {
+        <p class="text-[11px] font-medium text-feedback-danger mt-1">Selling price must be greater than 0.</p>
+      }
+    </div>
+
+    <!-- Sale Date Input -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Sale Date *</label>
+      <input
+        type="date"
+        [(ngModel)]="quickSoldData.soldDate"
+        class="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+      />
+    </div>
+
+    <!-- Live Calculated P&L Preview -->
+    @if (quickSoldData.sellingPrice && quickSoldData.sellingPrice > 0) {
+      <div class="p-4 rounded-2xl border border-border bg-background/40 space-y-2">
+        <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
+          <span>Realized Profit / Loss:</span>
+          <span
+            class="font-extrabold text-sm"
+            [ngClass]="getQuickSoldProfitLoss() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+          >
+            {{ (getQuickSoldProfitLoss() >= 0 ? '+' : '') + (getQuickSoldProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
+          </span>
+        </div>
+        <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
+          <span>Return on Investment:</span>
+          <span
+            class="font-extrabold text-xs"
+            [ngClass]="getQuickSoldReturnPercentage() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+          >
+            {{ (getQuickSoldReturnPercentage() >= 0 ? '+' : '') + getQuickSoldReturnPercentage() }}%
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div modal-footer class="flex items-center justify-end space-x-3 w-full">
+    <button
+      type="button"
+      (click)="closeQuickSoldModal()"
+      [disabled]="isSubmitting()"
+      class="px-5 py-2 rounded-full font-medium text-xs text-text-primary bg-card hover:bg-background border border-border shadow-sm cursor-pointer transition-colors duration-300 disabled:opacity-50"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      (click)="confirmQuickSold()"
+      [disabled]="isSubmitting()"
+      class="px-6 py-2 rounded-full font-semibold text-xs bg-feedback-success hover:bg-feedback-success/90 text-white shadow-md shadow-feedback-success/10 cursor-pointer transition-colors duration-300 flex items-center space-x-1.5 disabled:opacity-50"
+    >
+      @if (isSubmitting()) {
+        <svg class="w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      }
+      <span>Confirm Sale</span>
+    </button>
+  </div>
+</app-modal-dialog>
+
+<!-- ======================================================== -->
+<!-- MODAL 3: Quick Action "Update % Change" Modal            -->
+<!-- ======================================================== -->
+<app-modal-dialog
+  [isOpen]="isUpdatePercentageOpen()"
+  title="Update % Change"
+  subtitle="Update performance percentage to dynamically recalculate current portfolio valuation"
+  maxWidth="md"
+  (close)="closeUpdatePercentageModal()"
+>
+  <div modal-body class="space-y-4">
+    <!-- Holding Summary -->
+    <div class="p-4 rounded-2xl bg-background/60 border border-border flex items-center justify-between">
+      <div>
+        <div class="font-bold text-text-primary text-sm">{{ percentageHolding()?.name }}</div>
+        <div class="text-xs font-medium text-text-secondary mt-0.5">
+          Cost: {{ percentageHolding()?.buyingPrice | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+        </div>
+      </div>
+      <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-card border border-border text-text-secondary">
+        {{ percentageHolding()?.categoryName }}
+      </span>
+    </div>
+
+    <!-- % Change Input -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+        Current % Change
+      </label>
+      <div class="relative">
+        <input
+          type="number"
+          [(ngModel)]="percentageData.percentage"
+          step="any"
+          placeholder="0.0"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-text-primary text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+        />
+        <span class="absolute right-3.5 top-2.5 text-xs font-bold text-text-secondary">%</span>
+      </div>
+    </div>
+
+    <!-- Live Recalculation Preview -->
+    <div class="p-4 rounded-2xl border border-border bg-background/40 space-y-2">
+      <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
+        <span>Estimated Current Value:</span>
+        <span class="font-extrabold text-sm text-text-primary">
+          {{ getQuickPercentageCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+        </span>
+      </div>
+      <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
+        <span>Unrealized P&amp;L:</span>
+        <span
+          class="font-extrabold text-xs"
+          [ngClass]="getQuickPercentageUnrealizedPL() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+        >
+          {{ (getQuickPercentageUnrealizedPL() >= 0 ? '+' : '') + (getQuickPercentageUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
+          ({{ ((percentageData.percentage || 0) >= 0 ? '+' : '') + percentageData.percentage }}%)
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div modal-footer class="flex items-center justify-end space-x-3 w-full">
+    <button
+      type="button"
+      (click)="closeUpdatePercentageModal()"
+      [disabled]="isSubmitting()"
+      class="px-5 py-2 rounded-full font-medium text-xs text-text-primary bg-card hover:bg-background border border-border shadow-sm cursor-pointer transition-colors duration-300 disabled:opacity-50"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      (click)="confirmUpdatePercentage()"
+      [disabled]="isSubmitting()"
+      class="px-6 py-2 rounded-full font-semibold text-xs bg-accent-primary hover:bg-accent-primary/90 text-card shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300 flex items-center space-x-1.5 disabled:opacity-50"
+    >
+      @if (isSubmitting()) {
+        <svg class="w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      }
+      <span>Save Valuation</span>
+    </button>
+  </div>
+</app-modal-dialog>
+
+<!-- ======================================================== -->
+<!-- MODAL 4: Generic Delete Confirmation Dialog              -->
+<!-- ======================================================== -->
+<app-confirm-dialog
+  [isOpen]="isDeleteOpen()"
+  tone="danger"
+  title="Delete Investment"
+  [message]="'Are you sure you want to permanently delete \'' + (targetHolding()?.name || '') + '\'? This action cannot be undone.'"
+  confirmText="Delete"
+  cancelText="Cancel"
+  [isSubmitting]="isSubmitting()"
+  (confirm)="executeDelete()"
+  (cancel)="closeDeleteModal()"
+></app-confirm-dialog>
+
+<!-- ======================================================== -->
+<!-- MODAL 5: Create Custom Category Modal                    -->
+<!-- ======================================================== -->
+<app-modal-dialog
+  [isOpen]="isAddCategoryOpen()"
+  title="Add Investment Category"
+  subtitle="Create a new custom category to catalog your portfolio assets"
+  maxWidth="md"
+  (close)="closeAddCategoryModal()"
+>
+  <div modal-body class="space-y-4">
+    <!-- Category Name with Inline Validation -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Category Name *</label>
+      <input
+        type="text"
+        [(ngModel)]="newCategoryData.name"
+        (input)="onCategoryNameInput()"
+        placeholder="Enter category name"
+        class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm focus:outline-none transition-colors"
+        [ngClass]="categorySubmitted() && !newCategoryData.name.trim()
+          ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+          : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+      />
+      @if (categorySubmitted() && !newCategoryData.name.trim()) {
+        <p class="text-[11px] font-medium text-feedback-danger mt-1">Category name is required.</p>
+      }
+    </div>
+
+    <!-- Category Code with Inline Validation -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Category Code *</label>
+      <input
+        type="text"
+        [(ngModel)]="newCategoryData.code"
+        placeholder="e.g. PRIVATE_EQUITY"
+        class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm font-mono focus:outline-none transition-colors"
+        [ngClass]="categorySubmitted() && !newCategoryData.code.trim()
+          ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+          : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+      />
+      @if (categorySubmitted() && !newCategoryData.code.trim()) {
+        <p class="text-[11px] font-medium text-feedback-danger mt-1">Category code is required.</p>
+      } @else {
+        <p class="text-[11px] font-medium text-text-secondary mt-1">Unique uppercase identifier used internally</p>
+      }
+    </div>
+
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Description (Optional)</label>
+      <input
+        type="text"
+        [(ngModel)]="newCategoryData.description"
+        placeholder="Enter optional description"
+        class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+      />
+    </div>
+  </div>
+
+  <div modal-footer class="flex items-center justify-end space-x-3 w-full">
+    <button
+      type="button"
+      (click)="closeAddCategoryModal()"
+      [disabled]="isSubmitting()"
+      class="px-5 py-2 rounded-full font-medium text-xs text-text-primary bg-card hover:bg-background border border-border shadow-sm cursor-pointer transition-colors duration-300 disabled:opacity-50"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      (click)="saveCustomCategory()"
+      [disabled]="isSubmitting()"
+      class="px-6 py-2 rounded-full font-semibold text-xs bg-accent-primary hover:bg-accent-primary/90 text-card shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300 flex items-center space-x-1.5 disabled:opacity-50"
+    >
+      @if (isSubmitting()) {
+        <svg class="w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      }
+      <span>Create Category</span>
+    </button>
+  </div>
+</app-modal-dialog>
