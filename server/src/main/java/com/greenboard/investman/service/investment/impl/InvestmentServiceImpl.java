@@ -48,8 +48,17 @@ public class InvestmentServiceImpl implements InvestmentService {
             return Collections.emptyList();
         }
 
+        double totalInvested = investments.stream()
+                .mapToDouble(Investment::getBuyingPrice)
+                .sum();
+
         return investments.stream()
-                .map(this::toVO)
+                .map(inv -> {
+                    InvestmentVO vo = toVO(inv);
+                    double alloc = totalInvested > 0 ? (inv.getBuyingPrice() / totalInvested) * 100.0 : 0.0;
+                    vo.setAllocationPercentage(Math.round(alloc * 10.0) / 10.0);
+                    return vo;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -78,7 +87,7 @@ public class InvestmentServiceImpl implements InvestmentService {
                 ? (request.getSoldDate() != null ? request.getSoldDate() : LocalDateTime.now())
                 : null;
 
-        Double percentageChange = request.getCurrentPercentageChange() != null ? request.getCurrentPercentageChange() : 0.0;
+        Double percentageChange = request.getEffectivePercentChange();
 
         Investment investment = Investment.builder()
                 .assetName(request.getAssetName().trim())
@@ -90,7 +99,7 @@ public class InvestmentServiceImpl implements InvestmentService {
                 .isSold(isSold)
                 .sellingPrice(sellingPrice)
                 .soldDate(soldDate)
-                .currentPercentageChange(percentageChange)
+                .percentChange(percentageChange)
                 .remarks(request.getRemarks())
                 .tags(request.getTags())
                 .build();
@@ -136,8 +145,10 @@ public class InvestmentServiceImpl implements InvestmentService {
         investment.setSold(isSold);
         investment.setSellingPrice(sellingPrice);
         investment.setSoldDate(soldDate);
-        if (request.getCurrentPercentageChange() != null) {
-            investment.setCurrentPercentageChange(request.getCurrentPercentageChange());
+        if (request.getPercentChange() != null) {
+            investment.setPercentChange(request.getPercentChange());
+        } else if (request.getCurrentPercentageChange() != null) {
+            investment.setPercentChange(request.getCurrentPercentageChange());
         }
         investment.setRemarks(request.getRemarks());
         investment.setTags(request.getTags());
@@ -184,13 +195,65 @@ public class InvestmentServiceImpl implements InvestmentService {
         Investment investment = investmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Investment not found: " + id));
 
-        Double pct = request.getCurrentPercentageChange() != null ? request.getCurrentPercentageChange() : 0.0;
-        investment.setCurrentPercentageChange(pct);
+        Double pct = request.getEffectivePercentChange();
+        investment.setPercentChange(pct);
 
         Investment updated = investmentRepository.save(investment);
         log.info("Updated % change for investment #{} ({}) to {}%", updated.getId(), updated.getAssetName(), pct);
 
         return toVO(updated);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.greenboard.investman.vo.investment.InvestmentSummaryVO getInvestmentSummary() {
+        List<Investment> investments = investmentRepository.findAll();
+        if (CollectionUtils.isEmpty(investments)) {
+            return com.greenboard.investman.vo.investment.InvestmentSummaryVO.builder().build();
+        }
+
+        double totalInvested = 0.0;
+        double activeCost = 0.0, activeValue = 0.0;
+        double soldCost = 0.0, soldProceeds = 0.0;
+        int activeCount = 0, soldCount = 0;
+
+        for (Investment inv : investments) {
+            double cost = inv.getBuyingPrice();
+            totalInvested += cost;
+
+            if (inv.isSold()) {
+                soldCount++;
+                soldCost += cost;
+                soldProceeds += inv.getSellingPrice() != null ? inv.getSellingPrice() : cost;
+            } else {
+                activeCount++;
+                activeCost += cost;
+                double pct = inv.getPercentChange() != null ? inv.getPercentChange() : 0.0;
+                activeValue += cost * (1.0 + (pct / 100.0));
+            }
+        }
+
+        double unrealizedPL = activeValue - activeCost;
+        double unrealizedPct = activeCost > 0 ? (unrealizedPL / activeCost) * 100.0 : 0.0;
+        double realizedPL = soldProceeds - soldCost;
+        double realizedPct = soldCost > 0 ? (realizedPL / soldCost) * 100.0 : 0.0;
+
+        return com.greenboard.investman.vo.investment.InvestmentSummaryVO.builder()
+                .totalInvested(round2(totalInvested))
+                .currentPortfolioValue(round2(activeValue + soldProceeds))
+                .unrealizedProfitLoss(round2(unrealizedPL))
+                .unrealizedProfitLossPercentage(round2(unrealizedPct))
+                .realizedProfitLoss(round2(realizedPL))
+                .realizedProfitLossPercentage(round2(realizedPct))
+                .profitLossPercentage(round2(realizedPct))
+                .totalHoldingsCount(investments.size())
+                .activeHoldingsCount(activeCount)
+                .soldHoldingsCount(soldCount)
+                .build();
+    }
+
+    private static double round2(double val) {
+        return Math.round(val * 100.0) / 100.0;
     }
 
     private InvestmentVO toVO(Investment investment) {
@@ -199,16 +262,17 @@ public class InvestmentServiceImpl implements InvestmentService {
         Double returnPercentage = null;
         Double currentValue = null;
         Double unrealizedProfitLoss = null;
-        Double currentPercentageChange = investment.getCurrentPercentageChange();
+        Double percentChange = investment.getPercentChange() != null ? investment.getPercentChange() : 0.0;
 
         if (investment.isSold() && investment.getSellingPrice() != null) {
             double pl = investment.getSellingPrice() - buyingPrice;
             double ret = buyingPrice > 0 ? (pl / buyingPrice) * 100.0 : 0.0;
             profitLoss = Math.round(pl * 100.0) / 100.0;
             returnPercentage = Math.round(ret * 100.0) / 100.0;
+            currentValue = investment.getSellingPrice();
+            unrealizedProfitLoss = 0.0;
         } else if (!investment.isSold()) {
-            double pct = currentPercentageChange != null ? currentPercentageChange : 0.0;
-            double val = buyingPrice * (1.0 + (pct / 100.0));
+            double val = buyingPrice * (1.0 + (percentChange / 100.0));
             currentValue = Math.round(val * 100.0) / 100.0;
             unrealizedProfitLoss = Math.round((val - buyingPrice) * 100.0) / 100.0;
         }
@@ -228,7 +292,8 @@ public class InvestmentServiceImpl implements InvestmentService {
                 .soldDate(investment.getSoldDate())
                 .profitLoss(profitLoss)
                 .returnPercentage(returnPercentage)
-                .currentPercentageChange(currentPercentageChange)
+                .percentChange(percentChange)
+                .currentPercentageChange(percentChange)
                 .currentValue(currentValue)
                 .unrealizedProfitLoss(unrealizedProfitLoss)
                 .remarks(investment.getRemarks())

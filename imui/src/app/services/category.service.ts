@@ -34,8 +34,8 @@ export class CategoryService {
   createCategory(category: CategoryDTO): Observable<Category> {
     const url = `${environment.apiPrefix}/categories`;
     return this.http.post<Category>(url, category).pipe(
-      tap((created) => {
-        this.categories.update((current) => [...current, created]);
+      tap(() => {
+        this.loadCategories(category.domain).subscribe();
       })
     );
   }

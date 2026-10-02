@@ -60,6 +60,7 @@ public class TenantProvisioningService {
                     .baselineOnMigrate(false)
                     .load();
 
+            flyway.repair();
             flyway.migrate();
             log.info("Successfully executed tenant Flyway migrations for schema '{}'", schemaName);
         } catch (Exception e) {

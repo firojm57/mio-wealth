@@ -34,65 +34,77 @@
 
   <!-- Summary KPI Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-    <!-- Active Portfolio Valuation -->
+    <!-- 1. Invested Value -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Current Portfolio Value</span>
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Invested Value</span>
       <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
-        {{ totalCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+        {{ summary.totalInvested | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
       </div>
-      <div class="flex items-center justify-between text-xs mt-2.5">
-        <span class="text-text-secondary">Cost: {{ totalInvested() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
-        <span
-          class="font-bold flex items-center space-x-0.5"
-          [ngClass]="totalUnrealizedPL() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-        >
-          <span>{{ (totalUnrealizedPL() >= 0 ? '+' : '') + (totalUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
-          <span class="text-[10px]">({{ (totalUnrealizedReturnPct() >= 0 ? '+' : '') + totalUnrealizedReturnPct() }}%)</span>
-        </span>
+      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-primary"></span>
+        <span>Total invested in {{ summary.totalHoldingsCount }} asset(s)</span>
       </div>
     </div>
 
-    <!-- Realized Profit / Loss -->
+    <!-- 2. Current Portfolio Value -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Realized P&amp;L</span>
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Current Portfolio Value</span>
+      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
+        {{ summary.currentPortfolioValue | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-secondary"></span>
+        <span>Valuation across holdings</span>
+      </div>
+    </div>
+
+    <!-- 3. Unrealized Profit / Loss -->
+    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Unrealized Profit / Loss</span>
       <div
         class="text-3xl font-extrabold tracking-tight mt-2.5"
-        [ngClass]="realizedProfitLoss() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+        [ngClass]="summary.unrealizedProfitLoss >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
       >
-        {{ (realizedProfitLoss() >= 0 ? '+' : '') + (realizedProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
+        {{ (summary.unrealizedProfitLoss >= 0 ? '+' : '') + (summary.unrealizedProfitLoss | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
       </div>
       <div class="flex items-center space-x-1.5 mt-2.5">
         <span
           class="px-2 py-0.5 rounded-full text-xs font-semibold flex items-center space-x-0.5"
-          [ngClass]="realizedProfitLoss() >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
+          [ngClass]="summary.unrealizedProfitLoss >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
         >
-          <span>{{ realizedProfitLoss() >= 0 ? 'Profitable' : 'Deficit' }}</span>
+          <span>{{ summary.unrealizedProfitLoss >= 0 ? 'Profitable' : 'Deficit' }}</span>
         </span>
-        <span class="text-xs font-medium text-text-secondary">{{ soldCount() }} liquidated assets</span>
+        <span
+          class="text-xs font-bold"
+          [ngClass]="summary.unrealizedProfitLoss >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+        >
+          {{ (summary.unrealizedProfitLossPercentage >= 0 ? '+' : '') + (summary.unrealizedProfitLossPercentage | number:'1.2-2') }}%
+        </span>
       </div>
     </div>
 
-    <!-- Total Sales Proceeds -->
+    <!-- 4. Realized Profit / Loss -->
     <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Sales Proceeds</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
-        {{ realizedValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Realized Profit / Loss</span>
+      <div
+        class="text-3xl font-extrabold tracking-tight mt-2.5"
+        [ngClass]="summary.realizedProfitLoss >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+      >
+        {{ (summary.realizedProfitLoss >= 0 ? '+' : '') + (summary.realizedProfitLoss | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
       </div>
-      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent-secondary"></span>
-        <span>Gross realized value</span>
-      </div>
-    </div>
-
-    <!-- Asset Classes -->
-    <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
-      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Asset Classes</span>
-      <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">
-        {{ categories.length }}
-      </div>
-      <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent-primary"></span>
-        <span>Active categories cataloged</span>
+      <div class="flex items-center space-x-1.5 mt-2.5">
+        <span
+          class="px-2 py-0.5 rounded-full text-xs font-semibold flex items-center space-x-0.5"
+          [ngClass]="summary.realizedProfitLoss >= 0 ? 'bg-feedback-success/10 text-feedback-success' : 'bg-feedback-danger/10 text-feedback-danger'"
+        >
+          <span>{{ summary.realizedProfitLoss >= 0 ? 'Profitable' : 'Deficit' }}</span>
+        </span>
+        <span
+          class="text-xs font-bold"
+          [ngClass]="summary.realizedProfitLoss >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
+        >
+          {{ (summary.realizedProfitLossPercentage >= 0 ? '+' : '') + (summary.realizedProfitLossPercentage | number:'1.2-2') }}%
+        </span>
       </div>
     </div>
   </div>
@@ -110,7 +122,7 @@
             ? 'bg-accent-primary text-card shadow-sm'
             : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
         >
-          All Assets ({{ holdings.length }})
+          All Assets ({{ summary.totalHoldingsCount }})
         </button>
         <button
           type="button"
@@ -120,7 +132,7 @@
             ? 'bg-accent-primary text-card shadow-sm'
             : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
         >
-          Active Holdings ({{ activeCount() }})
+          Active Holdings ({{ summary.activeHoldingsCount }})
         </button>
         <button
           type="button"
@@ -130,7 +142,7 @@
             ? 'bg-accent-primary text-card shadow-sm'
             : 'bg-card border border-border text-text-secondary hover:text-text-primary hover:bg-background'"
         >
-          Sold / Realized ({{ soldCount() }})
+          Sold / Realized ({{ summary.soldHoldingsCount }})
         </button>
       </div>
 
@@ -146,8 +158,8 @@
           <tr class="border-b border-border/40 text-[11px] font-bold uppercase tracking-wider text-text-secondary bg-background/50">
             <th class="py-3.5 px-6">Asset Name</th>
             <th class="py-3.5 px-6">Category</th>
-            <th class="py-3.5 px-6">Cost Basis</th>
-            <th class="py-3.5 px-6">Current Valuation / P&amp;L</th>
+            <th class="py-3.5 px-6">Buying Cost</th>
+            <th class="py-3.5 px-6">Current Valuation</th>
             <th class="py-3.5 px-6">Status</th>
             <th class="py-3.5 px-6 text-right">Actions</th>
           </tr>
@@ -201,7 +213,7 @@
 
               <!-- Current Valuation & Unrealized / Realized P&L -->
               <td class="py-4 px-6">
-                @if (!holding.isSold) {
+                @if (!isHoldingSold(holding)) {
                   <div>
                     <div class="font-black text-sm text-text-primary">
                       {{ (holding.currentValue ?? holding.buyingPrice) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
@@ -242,7 +254,7 @@
 
               <!-- Status Badge -->
               <td class="py-4 px-6">
-                @if (!holding.isSold) {
+                @if (!isHoldingSold(holding)) {
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-feedback-success/10 text-feedback-success">
                     <span class="w-1.5 h-1.5 rounded-full bg-feedback-success mr-1.5"></span>
                     ACTIVE
@@ -258,7 +270,7 @@
               <!-- Actions -->
               <td class="py-4 px-6 text-right">
                 <div class="flex items-center justify-end space-x-2">
-                  @if (!holding.isSold) {
+                  @if (!isHoldingSold(holding)) {
                     <button
                       type="button"
                       (click)="openUpdatePercentageModal(holding)"
@@ -381,7 +393,6 @@
         <input
           type="number"
           [(ngModel)]="formData.quantity"
-          (input)="onQuantityOrUnitPriceChange()"
           min="1"
           class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
         />
@@ -395,7 +406,6 @@
         <input
           type="number"
           [(ngModel)]="formData.unitPrice"
-          (input)="onQuantityOrUnitPriceChange()"
           min="0"
           step="any"
           class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
@@ -410,7 +420,6 @@
         <input
           type="number"
           [(ngModel)]="formData.buyingPrice"
-          (input)="onBuyingPriceChange()"
           min="0.01"
           step="any"
           class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm font-bold focus:outline-none transition-colors"
@@ -433,31 +442,15 @@
           </label>
           <span class="text-[11px] text-text-secondary">E.g. +12.5% or -4.0%</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-          <div class="relative">
-            <input
-              type="number"
-              [(ngModel)]="formData.currentPercentageChange"
-              step="any"
-              placeholder="0.0"
-              class="w-full px-4 py-2 rounded-xl border border-border bg-card text-text-primary text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
-            />
-            <span class="absolute right-3.5 top-2.5 text-xs font-bold text-text-secondary">%</span>
-          </div>
-
-          <!-- Live valuation preview -->
-          @if (getFormCurrentValue() !== null) {
-            <div class="text-xs font-semibold">
-              <span class="text-text-secondary">Valuation: </span>
-              <span class="text-text-primary font-bold">{{ getFormCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
-              <span
-                class="ml-1.5 font-bold"
-                [ngClass]="(getFormUnrealizedPL() ?? 0) >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-              >
-                ({{ ((getFormUnrealizedPL() ?? 0) >= 0 ? '+' : '') + (getFormUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }})
-              </span>
-            </div>
-          }
+        <div class="relative">
+          <input
+            type="number"
+            [(ngModel)]="formData.percentChange"
+            step="any"
+            placeholder="0.0"
+            class="w-full px-4 py-2 rounded-xl border border-border bg-card text-text-primary text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+          />
+          <span class="absolute right-3.5 top-2.5 text-xs font-bold text-text-secondary">%</span>
         </div>
       </div>
     }
@@ -547,20 +540,6 @@
               />
             </div>
           </div>
-
-          <!-- Live P&L Preview in Form -->
-          @if (getFormProfitLoss() !== null) {
-            <div class="p-3.5 rounded-xl bg-card border border-border flex items-center justify-between shadow-xs">
-              <span class="text-xs font-semibold text-text-secondary">Projected Realized Return:</span>
-              <div
-                class="text-sm font-extrabold flex items-center space-x-1.5"
-                [ngClass]="(getFormProfitLoss() ?? 0) >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-              >
-                <span>{{ ((getFormProfitLoss() ?? 0) >= 0 ? '+' : '') + (getFormProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}</span>
-                <span class="text-xs font-semibold">({{ ((getFormReturnPercentage() ?? 0) >= 0 ? '+' : '') + getFormReturnPercentage() }}%)</span>
-              </div>
-            </div>
-          }
         </div>
       }
     </div>
@@ -646,30 +625,6 @@
         class="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
       />
     </div>
-
-    <!-- Live Calculated P&L Preview -->
-    @if (quickSoldData.sellingPrice && quickSoldData.sellingPrice > 0) {
-      <div class="p-4 rounded-2xl border border-border bg-background/40 space-y-2">
-        <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
-          <span>Realized Profit / Loss:</span>
-          <span
-            class="font-extrabold text-sm"
-            [ngClass]="getQuickSoldProfitLoss() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-          >
-            {{ (getQuickSoldProfitLoss() >= 0 ? '+' : '') + (getQuickSoldProfitLoss() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
-          </span>
-        </div>
-        <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
-          <span>Return on Investment:</span>
-          <span
-            class="font-extrabold text-xs"
-            [ngClass]="getQuickSoldReturnPercentage() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-          >
-            {{ (getQuickSoldReturnPercentage() >= 0 ? '+' : '') + getQuickSoldReturnPercentage() }}%
-          </span>
-        </div>
-      </div>
-    }
   </div>
 
   <div modal-footer class="flex items-center justify-end space-x-3 w-full">
@@ -736,26 +691,6 @@
           class="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-text-primary text-sm font-bold focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
         />
         <span class="absolute right-3.5 top-2.5 text-xs font-bold text-text-secondary">%</span>
-      </div>
-    </div>
-
-    <!-- Live Recalculation Preview -->
-    <div class="p-4 rounded-2xl border border-border bg-background/40 space-y-2">
-      <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
-        <span>Estimated Current Value:</span>
-        <span class="font-extrabold text-sm text-text-primary">
-          {{ getQuickPercentageCurrentValue() | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
-        </span>
-      </div>
-      <div class="flex items-center justify-between text-xs font-medium text-text-secondary">
-        <span>Unrealized P&amp;L:</span>
-        <span
-          class="font-extrabold text-xs"
-          [ngClass]="getQuickPercentageUnrealizedPL() >= 0 ? 'text-feedback-success' : 'text-feedback-danger'"
-        >
-          {{ (getQuickPercentageUnrealizedPL() >= 0 ? '+' : '') + (getQuickPercentageUnrealizedPL() | currency:dashboardService.currencyCode():'symbol':'1.0-0') }}
-          ({{ ((percentageData.percentage || 0) >= 0 ? '+' : '') + percentageData.percentage }}%)
-        </span>
       </div>
     </div>
   </div>

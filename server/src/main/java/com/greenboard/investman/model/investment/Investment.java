@@ -70,6 +70,14 @@ public class Investment {
     private String tags;
 
     @Builder.Default
-    @Column(name = "current_percentage_change")
-    private Double currentPercentageChange = 0.0;
+    @Column(name = "percent_change")
+    private Double percentChange = 0.0;
+
+    public Double getCurrentPercentageChange() {
+        return this.percentChange;
+    }
+
+    public void setCurrentPercentageChange(Double percentChange) {
+        this.percentChange = percentChange;
+    }
 }

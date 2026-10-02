@@ -1,14 +1,13 @@
 @if (isOpen()) {
   <div
     class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-    (click)="onBackdropClick()"
+    (click)="onBackdropClick($event)"
     role="dialog"
     aria-modal="true"
   >
     <div
       class="bg-card border border-border rounded-3xl p-6 sm:p-7 shadow-2xl w-full flex flex-col overflow-hidden max-h-[90vh] transition-colors duration-300"
       [ngClass]="getMaxWidthClass()"
-      (click)="$event.stopPropagation()"
     >
       <!-- Modal Header -->
       @if (title() || showCloseButton()) {

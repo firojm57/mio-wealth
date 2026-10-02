@@ -32,11 +32,8 @@ export class TagService {
   createTag(payload: TagDTO): Observable<TagDTO> {
     const url = `${environment.apiPrefix}/tags`;
     return this.http.post<TagDTO>(url, payload).pipe(
-      tap((created) => {
-        const current = this.tags();
-        if (!current.some(t => t.name.toLowerCase() === created.name.toLowerCase())) {
-          this.tags.set([...current, created]);
-        }
+      tap(() => {
+        this.loadTags(payload.domain || 'INVESTMENT').subscribe();
       })
     );
   }

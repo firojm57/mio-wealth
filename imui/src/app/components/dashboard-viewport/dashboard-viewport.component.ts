@@ -42,11 +42,4 @@ export class DashboardViewportComponent implements OnInit {
   get holdings(): InvestmentHolding[] {
     return this.investmentService.holdings();
   }
-
-  getAllocation(item: InvestmentHolding): string {
-    const itemCost = item.buyingPrice || item.amount || 0;
-    const total = this.holdings.reduce((sum, h) => sum + (h.buyingPrice || h.amount || 0), 0);
-    if (!total || total === 0) return '0%';
-    return `${Math.round((itemCost / total) * 100)}%`;
-  }
 }

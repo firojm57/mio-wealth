@@ -11,13 +11,16 @@ export interface InvestmentHolding {
   unitPrice: number;
   investmentDate: string;
   isSold: boolean;
+  sold?: boolean;
   sellingPrice?: number | null;
   soldDate?: string | null;
   profitLoss?: number | null;
   returnPercentage?: number | null;
+  percentChange?: number | null;
   currentPercentageChange?: number | null;
   currentValue?: number | null;
   unrealizedProfitLoss?: number | null;
+  allocationPercentage?: number | null;
   remarks?: string;
   tags?: string;
 }
@@ -33,6 +36,7 @@ export interface InvestmentDTO {
   isSold?: boolean;
   sellingPrice?: number | null;
   soldDate?: string | null;
+  percentChange?: number | null;
   currentPercentageChange?: number | null;
   remarks?: string;
   tags?: string;
@@ -45,7 +49,14 @@ export interface MarkSoldDTO {
 
 export interface InvestmentSummary {
   totalInvested: number;
-  activeInvested: number;
+  currentPortfolioValue: number;
+  unrealizedProfitLoss: number;
+  unrealizedProfitLossPercentage: number;
   realizedProfitLoss: number;
-  holdings: InvestmentHolding[];
+  realizedProfitLossPercentage: number;
+  profitLossPercentage?: number;
+  assetClassesCount?: number;
+  totalHoldingsCount: number;
+  activeHoldingsCount: number;
+  soldHoldingsCount: number;
 }
