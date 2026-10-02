@@ -66,44 +66,22 @@ export class InvestmentComponent implements OnInit {
     return this.categoryService.categories();
   }
 
+  get summary() {
+    return this.investmentService.summary();
+  }
+
+  isHoldingSold(h?: InvestmentHolding | null): boolean {
+    return Boolean(h?.isSold || h?.sold);
+  }
+
   // Filtered Holdings
   readonly filteredHoldings = computed(() => {
     const list = this.holdings;
     const filter = this.tableFilter();
-    if (filter === 'ACTIVE') return list.filter(h => !h.isSold);
-    if (filter === 'SOLD') return list.filter(h => h.isSold);
+    if (filter === 'ACTIVE') return list.filter(h => !this.isHoldingSold(h));
+    if (filter === 'SOLD') return list.filter(h => this.isHoldingSold(h));
     return list;
   });
-
-  // KPI Metrics
-  readonly activeCount = computed(() => this.holdings.filter(h => !h.isSold).length);
-  readonly soldCount = computed(() => this.holdings.filter(h => h.isSold).length);
-
-  readonly totalInvested = computed(() =>
-    this.holdings.filter(h => !h.isSold).reduce((sum, h) => sum + (h.buyingPrice || 0), 0)
-  );
-
-  readonly totalCurrentValue = computed(() =>
-    this.holdings.filter(h => !h.isSold).reduce((sum, h) => sum + (h.currentValue ?? h.buyingPrice ?? 0), 0)
-  );
-
-  readonly totalUnrealizedPL = computed(() =>
-    this.holdings.filter(h => !h.isSold).reduce((sum, h) => sum + (h.unrealizedProfitLoss ?? 0), 0)
-  );
-
-  readonly totalUnrealizedReturnPct = computed(() => {
-    const cost = this.totalInvested();
-    if (!cost || cost <= 0) return 0;
-    return +((this.totalUnrealizedPL() / cost) * 100).toFixed(2);
-  });
-
-  readonly realizedProfitLoss = computed(() =>
-    this.holdings.filter(h => h.isSold).reduce((sum, h) => sum + (h.profitLoss || 0), 0)
-  );
-
-  readonly realizedValue = computed(() =>
-    this.holdings.filter(h => h.isSold).reduce((sum, h) => sum + (h.sellingPrice || 0), 0)
-  );
 
   ngOnInit(): void {
     this.refreshData();
@@ -111,6 +89,7 @@ export class InvestmentComponent implements OnInit {
 
   refreshData(): void {
     this.investmentService.loadHoldings().subscribe();
+    this.investmentService.loadSummary().subscribe();
     this.categoryService.loadCategories('INVESTMENT').subscribe({
       next: (cats) => {
         if (cats.length > 0 && !cats.some(c => c.code === this.selectedCategoryTab())) {
@@ -138,6 +117,7 @@ export class InvestmentComponent implements OnInit {
     this.editingId.set(holding.id);
     this.formSubmitted.set(false);
     this.selectedCategoryTab.set(holding.categoryCode);
+    const pct = holding.percentChange ?? holding.currentPercentageChange ?? 0;
     this.formData = {
       id: holding.id,
       assetName: holding.name,
@@ -146,10 +126,11 @@ export class InvestmentComponent implements OnInit {
       quantity: holding.quantity,
       unitPrice: holding.unitPrice,
       investmentDate: holding.investmentDate ? holding.investmentDate.split('T')[0] : this.getTodayDate(),
-      isSold: holding.isSold,
+      isSold: this.isHoldingSold(holding),
       sellingPrice: holding.sellingPrice ?? null,
       soldDate: holding.soldDate ? holding.soldDate.split('T')[0] : null,
-      currentPercentageChange: holding.currentPercentageChange ?? 0,
+      percentChange: pct,
+      currentPercentageChange: pct,
       remarks: holding.remarks || '',
       tags: holding.tags || ''
     };
@@ -167,50 +148,11 @@ export class InvestmentComponent implements OnInit {
     this.formData.categoryCode = categoryCode;
   }
 
-  onQuantityOrUnitPriceChange(): void {
-    if (this.formData.quantity && this.formData.unitPrice && this.formData.unitPrice > 0) {
-      this.formData.buyingPrice = +(this.formData.quantity * this.formData.unitPrice).toFixed(2);
-    }
-  }
-
-  onBuyingPriceChange(): void {
-    if (this.formData.buyingPrice && this.formData.quantity && this.formData.quantity > 0) {
-      this.formData.unitPrice = +(this.formData.buyingPrice / this.formData.quantity).toFixed(2);
-    }
-  }
-
   toggleSoldInForm(): void {
     this.formData.isSold = !this.formData.isSold;
     if (this.formData.isSold && !this.formData.soldDate) {
       this.formData.soldDate = this.getTodayDate();
     }
-  }
-
-  getFormProfitLoss(): number | null {
-    if (!this.formData.isSold || !this.formData.sellingPrice || !this.formData.buyingPrice) {
-      return null;
-    }
-    return +(this.formData.sellingPrice - this.formData.buyingPrice).toFixed(2);
-  }
-
-  getFormReturnPercentage(): number | null {
-    const pl = this.getFormProfitLoss();
-    if (pl === null || !this.formData.buyingPrice || this.formData.buyingPrice <= 0) {
-      return null;
-    }
-    return +((pl / this.formData.buyingPrice) * 100).toFixed(2);
-  }
-
-  getFormCurrentValue(): number | null {
-    if (!this.formData.buyingPrice || this.formData.buyingPrice <= 0) return null;
-    const pct = this.formData.currentPercentageChange ?? 0;
-    return +(this.formData.buyingPrice * (1 + pct / 100)).toFixed(2);
-  }
-
-  getFormUnrealizedPL(): number | null {
-    const curVal = this.getFormCurrentValue();
-    if (curVal === null || !this.formData.buyingPrice) return null;
-    return +(curVal - this.formData.buyingPrice).toFixed(2);
   }
 
   saveInvestment(): void {
@@ -226,8 +168,11 @@ export class InvestmentComponent implements OnInit {
 
     this.isSubmitting.set(true);
     const id = this.editingId();
+    const pct = this.formData.percentChange ?? this.formData.currentPercentageChange ?? 0;
     const payload: InvestmentDTO = {
       ...this.formData,
+      percentChange: pct,
+      currentPercentageChange: pct,
       investmentDate: this.formData.investmentDate && !this.formData.investmentDate.includes('T')
         ? `${this.formData.investmentDate}T00:00:00`
         : this.formData.investmentDate,
@@ -249,6 +194,7 @@ export class InvestmentComponent implements OnInit {
           'success'
         );
         this.investmentService.loadHoldings().subscribe();
+        this.investmentService.loadSummary().subscribe();
       },
       error: () => {
         this.isSubmitting.set(false);
@@ -274,19 +220,6 @@ export class InvestmentComponent implements OnInit {
     this.quickSoldSubmitted.set(false);
   }
 
-  getQuickSoldProfitLoss(): number {
-    const holding = this.quickSoldHolding();
-    if (!holding || !this.quickSoldData.sellingPrice) return 0;
-    return +(this.quickSoldData.sellingPrice - holding.buyingPrice).toFixed(2);
-  }
-
-  getQuickSoldReturnPercentage(): number {
-    const holding = this.quickSoldHolding();
-    if (!holding || !holding.buyingPrice || holding.buyingPrice <= 0) return 0;
-    const pl = this.getQuickSoldProfitLoss();
-    return +((pl / holding.buyingPrice) * 100).toFixed(2);
-  }
-
   confirmQuickSold(): void {
     this.quickSoldSubmitted.set(true);
     const holding = this.quickSoldHolding();
@@ -308,6 +241,7 @@ export class InvestmentComponent implements OnInit {
         this.closeQuickSoldModal();
         this.toastService.showToast(`Marked '${holding.name}' as sold.`, 'success');
         this.investmentService.loadHoldings().subscribe();
+        this.investmentService.loadSummary().subscribe();
       },
       error: () => {
         this.isSubmitting.set(false);
@@ -319,25 +253,13 @@ export class InvestmentComponent implements OnInit {
   // Quick Action: Update % Change Dialog
   openUpdatePercentageModal(holding: InvestmentHolding): void {
     this.percentageHolding.set(holding);
-    this.percentageData = { percentage: holding.currentPercentageChange ?? 0 };
+    this.percentageData = { percentage: holding.percentChange ?? holding.currentPercentageChange ?? 0 };
     this.isUpdatePercentageOpen.set(true);
   }
 
   closeUpdatePercentageModal(): void {
     this.isUpdatePercentageOpen.set(false);
     this.percentageHolding.set(null);
-  }
-
-  getQuickPercentageCurrentValue(): number {
-    const holding = this.percentageHolding();
-    if (!holding || !holding.buyingPrice) return 0;
-    return +(holding.buyingPrice * (1 + (this.percentageData.percentage || 0) / 100)).toFixed(2);
-  }
-
-  getQuickPercentageUnrealizedPL(): number {
-    const holding = this.percentageHolding();
-    if (!holding || !holding.buyingPrice) return 0;
-    return +(this.getQuickPercentageCurrentValue() - holding.buyingPrice).toFixed(2);
   }
 
   confirmUpdatePercentage(): void {
@@ -351,6 +273,7 @@ export class InvestmentComponent implements OnInit {
         this.closeUpdatePercentageModal();
         this.toastService.showToast(`Performance updated for '${holding.name}'.`, 'success');
         this.investmentService.loadHoldings().subscribe();
+        this.investmentService.loadSummary().subscribe();
       },
       error: () => {
         this.isSubmitting.set(false);
@@ -381,6 +304,7 @@ export class InvestmentComponent implements OnInit {
         this.closeDeleteModal();
         this.toastService.showToast('Investment removed successfully.', 'success');
         this.investmentService.loadHoldings().subscribe();
+        this.investmentService.loadSummary().subscribe();
       },
       error: () => {
         this.isSubmitting.set(false);
@@ -447,6 +371,7 @@ export class InvestmentComponent implements OnInit {
       isSold: false,
       sellingPrice: null,
       soldDate: null,
+      percentChange: 0,
       currentPercentageChange: 0,
       remarks: '',
       tags: ''

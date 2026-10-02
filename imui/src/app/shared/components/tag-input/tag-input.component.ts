@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, inject, input, model, OnInit, signal, computed } from '@angular/core';
+import { Component, ElementRef, inject, input, model, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TagService } from '../../../services/tag.service';
@@ -9,7 +9,7 @@ import { TagService } from '../../../services/tag.service';
   imports: [CommonModule, FormsModule],
   templateUrl: './tag-input.component.html'
 })
-export class TagInputComponent implements OnInit {
+export class TagInputComponent implements OnInit, OnDestroy {
   private readonly tagService = inject(TagService);
   private readonly elementRef = inject(ElementRef);
 
@@ -52,8 +52,23 @@ export class TagInputComponent implements OnInit {
     return !this.availableTags.some(t => t.name.toLowerCase() === qLower);
   });
 
+  private readonly documentClickListener = (event: MouseEvent) => {
+    if (!this.elementRef.nativeElement.contains(event.target as Node)) {
+      this.isOpen.set(false);
+    }
+  };
+
   ngOnInit(): void {
     this.tagService.loadTags(this.domain()).subscribe();
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', this.documentClickListener, true);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('click', this.documentClickListener, true);
+    }
   }
 
   addTag(tagName: string): void {
@@ -97,12 +112,5 @@ export class TagInputComponent implements OnInit {
 
   onInputFocus(): void {
     this.isOpen.set(true);
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.elementRef.nativeElement.contains(event.target)) {
-      this.isOpen.set(false);
-    }
   }
 }

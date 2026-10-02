@@ -4,6 +4,7 @@ import com.greenboard.investman.vo.investment.InvestmentRequestVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
 import com.greenboard.investman.vo.investment.MarkSoldRequestVO;
 
+import com.greenboard.investman.vo.investment.InvestmentSummaryVO;
 import com.greenboard.investman.vo.investment.UpdatePercentageRequestVO;
 
 import java.util.List;
@@ -16,4 +17,5 @@ public interface InvestmentService {
     void deleteInvestment(String id);
     InvestmentVO markAsSold(String id, MarkSoldRequestVO request);
     InvestmentVO updateCurrentPercentage(String id, UpdatePercentageRequestVO request);
+    InvestmentSummaryVO getInvestmentSummary();
 }

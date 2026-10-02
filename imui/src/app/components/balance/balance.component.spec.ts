@@ -23,6 +23,13 @@ describe('BalanceComponent', () => {
 
     fixture = TestBed.createComponent(BalanceComponent);
     component = fixture.componentInstance;
+    const balanceService = TestBed.inject(BalanceService);
+    balanceService.summary.set({
+      totalAssets: 1795650,
+      totalLiabilities: 547340,
+      netWorth: 1248310,
+      equityRatio: 69.518
+    });
     fixture.detectChanges();
   });
 

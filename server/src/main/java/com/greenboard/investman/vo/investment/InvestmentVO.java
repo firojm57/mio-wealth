@@ -1,5 +1,6 @@
 package com.greenboard.investman.vo.investment;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,14 +24,29 @@ public class InvestmentVO {
     private int quantity;
     private double unitPrice;
     private LocalDateTime investmentDate;
+
+    @JsonProperty("isSold")
     private boolean isSold;
+
+    @JsonProperty("isSold")
+    public boolean isSold() {
+        return this.isSold;
+    }
+
+    @JsonProperty("sold")
+    public boolean getSold() {
+        return this.isSold;
+    }
+
     private Double sellingPrice;
     private LocalDateTime soldDate;
     private Double profitLoss;
     private Double returnPercentage;
+    private Double percentChange;
     private Double currentPercentageChange;
     private Double currentValue;
     private Double unrealizedProfitLoss;
+    private Double allocationPercentage;
     private String remarks;
     private String tags;
 

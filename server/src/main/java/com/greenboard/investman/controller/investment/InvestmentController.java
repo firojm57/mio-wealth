@@ -2,6 +2,7 @@ package com.greenboard.investman.controller.investment;
 
 import com.greenboard.investman.service.investment.InvestmentService;
 import com.greenboard.investman.vo.investment.InvestmentRequestVO;
+import com.greenboard.investman.vo.investment.InvestmentSummaryVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
 import com.greenboard.investman.vo.investment.MarkSoldRequestVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,17 @@ public class InvestmentController {
     public ResponseEntity<List<InvestmentVO>> getInvestments() {
         log.info("Fetching investments");
         return ResponseEntity.ok(investmentService.getInvestments());
+    }
+
+    @GetMapping("/summary")
+    @Operation(summary = "Get Investment Summary", description = "Retrieves aggregated portfolio metrics calculated on backend.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Investment summary retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<InvestmentSummaryVO> getInvestmentSummary() {
+        log.info("Fetching investment summary");
+        return ResponseEntity.ok(investmentService.getInvestmentSummary());
     }
 
     @GetMapping("/{id}")

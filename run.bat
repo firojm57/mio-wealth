@@ -39,9 +39,9 @@ echo.
 
 cd /d "%ROOT_DIR%server"
 if exist "mvnw.cmd" (
-    call mvnw.cmd spring-boot:run
+    call mvnw.cmd clean spring-boot:run
 ) else (
-    call mvn spring-boot:run
+    call mvn clean spring-boot:run
 )
 
 if %ERRORLEVEL% neq 0 goto :err_server

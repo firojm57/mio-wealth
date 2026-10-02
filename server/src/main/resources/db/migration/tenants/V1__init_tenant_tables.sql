@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS investment (
     is_sold BOOLEAN NOT NULL DEFAULT false,
     selling_price DOUBLE PRECISION,
     sold_date TIMESTAMP,
-    current_percentage_change DOUBLE PRECISION DEFAULT 0.0,
+    percent_change DOUBLE PRECISION DEFAULT 0.0,
     remarks VARCHAR(255),
     tags VARCHAR(255),
     CONSTRAINT fk_investment_category FOREIGN KEY (category_code) REFERENCES category (code)

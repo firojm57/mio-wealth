@@ -24,8 +24,8 @@ export class ModalDialogComponent {
     }
   }
 
-  onBackdropClick(): void {
-    if (this.closeOnBackdrop()) {
+  onBackdropClick(event: MouseEvent): void {
+    if (this.closeOnBackdrop() && event.target === event.currentTarget) {
       this.close.emit();
     }
   }

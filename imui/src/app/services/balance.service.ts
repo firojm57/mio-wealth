@@ -15,30 +15,10 @@ export class BalanceService {
   readonly liabilities = signal<LiabilityItem[]>([]);
   readonly isLoading = signal<boolean>(false);
 
-  readonly totalAssets = computed(() => {
-    const s = this.summary();
-    if (s != null) return s.totalAssets;
-    return this.assets().reduce((sum, item) => sum + item.amount, 0);
-  });
-
-  readonly totalLiabilities = computed(() => {
-    const s = this.summary();
-    if (s != null) return s.totalLiabilities;
-    return this.liabilities().reduce((sum, item) => sum + item.amount, 0);
-  });
-
-  readonly netWorth = computed(() => {
-    const s = this.summary();
-    if (s != null) return s.netWorth;
-    return this.totalAssets() - this.totalLiabilities();
-  });
-
-  readonly equityRatio = computed(() => {
-    const s = this.summary();
-    if (s != null) return s.equityRatio;
-    const assets = this.totalAssets();
-    return assets === 0 ? 0 : (this.netWorth() / assets) * 100;
-  });
+  readonly totalAssets = computed(() => this.summary()?.totalAssets ?? 0);
+  readonly totalLiabilities = computed(() => this.summary()?.totalLiabilities ?? 0);
+  readonly netWorth = computed(() => this.summary()?.netWorth ?? 0);
+  readonly equityRatio = computed(() => this.summary()?.equityRatio ?? 0);
 
   loadSummary(): Observable<BalanceMetrics> {
     const url = `${environment.apiPrefix}/balance/summary`;
@@ -83,8 +63,8 @@ export class BalanceService {
   addLiability(payload: LiabilityRequest): Observable<LiabilityItem> {
     const url = `${environment.apiPrefix}/balance/liabilities`;
     return this.http.post<LiabilityItem>(url, payload).pipe(
-      tap((item) => {
-        this.liabilities.update((list) => [item, ...list]);
+      tap(() => {
+        this.loadLiabilities().subscribe();
         this.loadSummary().subscribe();
       })
     );
@@ -94,7 +74,7 @@ export class BalanceService {
     const url = `${environment.apiPrefix}/balance/liabilities/${id}`;
     return this.http.delete<void>(url).pipe(
       tap(() => {
-        this.liabilities.update((list) => list.filter((item) => item.id !== id));
+        this.loadLiabilities().subscribe();
         this.loadSummary().subscribe();
       })
     );

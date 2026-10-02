@@ -14,6 +14,12 @@ import lombok.Setter;
 @Builder
 public class UpdatePercentageRequestVO {
 
-    @NotNull(message = "currentPercentageChange is required")
+    private Double percentChange;
     private Double currentPercentageChange;
+
+    public Double getEffectivePercentChange() {
+        if (this.percentChange != null) return this.percentChange;
+        if (this.currentPercentageChange != null) return this.currentPercentageChange;
+        return 0.0;
+    }
 }
