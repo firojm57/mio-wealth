@@ -1,4 +1,4 @@
-export type FinancialDomain = 'INVESTMENT' | 'SAVING' | 'EXPENSE' | 'LIABILITY';
+export type FinancialDomain = 'INVESTMENT' | 'SAVING' | 'EXPENSE' | 'LIABILITY' | 'INCOME' | 'TRANSFER';
 
 export interface Category {
   code: string;
@@ -19,7 +19,9 @@ export const DOMAIN_ICONS: Record<string, string> = {
   INVESTMENT: 'icon-investments',
   SAVING: 'icon-cashflow',
   LIABILITY: 'icon-liabilities',
-  EXPENSE: 'icon-expenses'
+  EXPENSE: 'icon-expenses',
+  INCOME: 'icon-cashflow',
+  TRANSFER: 'icon-cashflow'
 };
 
 export function getDomainIcon(domain?: string): string {

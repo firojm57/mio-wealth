@@ -1,43 +1,36 @@
 <!-- MAIN CONTAINER -->
-<div class="w-full min-h-full transition-colors duration-300 pb-16 sm:pb-24 lg:pb-8">
-  
-  <div class="space-y-6 md:space-y-8 animate-fade-in">
-    <!-- Page Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight text-text-primary">{{ 'DASHBOARD.TITLE' | translate }}</h1>
-        <p class="text-sm font-medium text-text-secondary mt-1">{{ 'DASHBOARD.SUBTITLE' | translate }}</p>
-      </div>
-      
-      <!-- Actions Block -->
+<div class="w-full min-h-full transition-colors duration-300 pb-8">
+  <div class="space-y-4 md:space-y-5 animate-fade-in">
+    <h1 class="sr-only">{{ 'DASHBOARD.TITLE' | translate }}</h1>
+    <!-- Actions Bar -->
+    <div class="flex items-center justify-end">
       <div class="grid grid-cols-3 gap-2 w-full md:flex md:w-auto md:space-x-2.5">
         <!-- Last 30 Days Dropdown -->
-        <button class="flex items-center justify-center space-x-1.5 px-2 py-2 bg-card hover:bg-background border border-border rounded-full font-medium text-[10px] sm:text-xs text-text-primary shadow-sm cursor-pointer whitespace-nowrap transition-colors duration-300 w-full">
-          <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-calendar"></use></svg>
+        <button class="flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-card hover:bg-background border border-border rounded-full font-medium text-[10px] sm:text-xs text-text-primary shadow-xs cursor-pointer whitespace-nowrap transition-colors duration-200 w-full">
+          <svg class="w-3.5 h-3.5 text-text-secondary"><use href="assets/icons.svg#icon-calendar"></use></svg>
           <span>{{ 'DASHBOARD.LAST_30_DAYS' | translate }}</span>
         </button>
         
         <!-- Export button -->
-        <button class="flex items-center justify-center space-x-1.5 px-2 py-2 bg-card hover:bg-background border border-border rounded-full font-medium text-[10px] sm:text-xs text-text-primary shadow-sm cursor-pointer whitespace-nowrap transition-colors duration-300 w-full">
-          <svg class="w-4 h-4 text-text-secondary"><use href="assets/icons.svg#icon-export"></use></svg>
+        <button class="flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-card hover:bg-background border border-border rounded-full font-medium text-[10px] sm:text-xs text-text-primary shadow-xs cursor-pointer whitespace-nowrap transition-colors duration-200 w-full">
+          <svg class="w-3.5 h-3.5 text-text-secondary"><use href="assets/icons.svg#icon-export"></use></svg>
           <span>{{ 'DASHBOARD.EXPORT' | translate }}</span>
         </button>
         
         <!-- Share Report button -->
-        <button class="flex items-center justify-center space-x-1.5 px-2 py-2 bg-accent-primary hover:bg-accent-primary/90 text-card rounded-full font-semibold text-[10px] sm:text-xs shadow-md shadow-accent-primary/10 cursor-pointer whitespace-nowrap transition-colors duration-300 w-full">
-          <svg class="w-4 h-4"><use href="assets/icons.svg#icon-share"></use></svg>
+        <button class="flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-accent-primary hover:bg-accent-primary/90 text-card rounded-full font-semibold text-[10px] sm:text-xs shadow-sm shadow-accent-primary/20 cursor-pointer whitespace-nowrap transition-colors duration-200 w-full">
+          <svg class="w-3.5 h-3.5"><use href="assets/icons.svg#icon-share"></use></svg>
           <span>{{ 'DASHBOARD.SHARE_REPORT' | translate }}</span>
         </button>
       </div>
     </div>
 
-    <!-- GRID ROW 1: KEY METRICS (Mobile-First: 1 col, Tablet: 2 cols, Desktop: 4 cols) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-      
+    <!-- GRID ROW 1: KEY METRICS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
       <!-- Net Worth Card -->
-      <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.NET_WORTH' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ netWorth | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight mt-1.5">{{ netWorth | currency:'INR':'symbol':'1.0-0' }}</div>
         <div class="flex items-center space-x-1.5 mt-2.5">
           <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
             <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
@@ -48,13 +41,13 @@
       </div>
 
       <!-- Total Assets Card (With Interactive CSS Popover Tooltip) -->
-      <div class="group relative p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md cursor-help">
+      <div class="group relative p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md cursor-help">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.TOTAL_ASSETS' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5 flex items-center justify-between">
+        <div class="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight mt-1.5 flex items-center justify-between">
           <span>{{ totalAssets | currency:'INR':'symbol':'1.0-0' }}</span>
           <svg class="w-4 h-4 text-text-secondary group-hover:text-accent-secondary transition-colors duration-200"><use href="assets/icons.svg#icon-dots"></use></svg>
         </div>
-        <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1">
+        <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1">
           <span>{{ 'NAV.CASH_FLOW' | translate }}, {{ 'NAV.INVESTMENTS' | translate }}, {{ 'NAV.ASSETS' | translate }}</span>
         </div>
 
@@ -64,7 +57,7 @@
           <div class="space-y-1.5">
             <div class="flex justify-between text-[11px] font-medium">
               <span class="text-text-secondary">{{ 'DASHBOARD.CASH' | translate }}:</span>
-              <span class="text-text-primary font-bold">₹0</span>
+              <span class="text-text-primary font-bold">{{ cashReserves | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
             </div>
             <div class="flex justify-between text-[11px] font-medium">
               <span class="text-text-secondary">{{ 'DASHBOARD.STOCKS' | translate }}:</span>
@@ -75,20 +68,20 @@
       </div>
 
       <!-- Total Liabilities Card -->
-      <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.TOTAL_LIABILITIES' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalLiabilities | currency:'INR':'symbol':'1.0-0' }}</div>
-        <div class="text-xs font-medium text-text-secondary mt-3 flex items-center space-x-1.5">
+        <div class="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight mt-1.5">{{ totalLiabilities | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1.5">
           <span class="w-1.5 h-1.5 rounded-full bg-feedback-danger"></span>
           <span>{{ 'DASHBOARD.MORTGAGE_LOANS' | translate }}</span>
         </div>
       </div>
 
       <!-- Investment Return Card -->
-      <div class="p-6 bg-card border border-border rounded-3xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
         <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">{{ 'DASHBOARD.INVESTMENT_RETURN' | translate }}</span>
-        <div class="text-3xl font-extrabold text-text-primary tracking-tight mt-2.5">{{ totalAssets > 0 ? '+0.0%' : '0.0%' }}</div>
-        <div class="flex items-center space-x-1.5 mt-2.5">
+        <div class="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight mt-1.5">{{ totalAssets > 0 ? '+0.0%' : '0.0%' }}</div>
+        <div class="flex items-center space-x-1.5 mt-2">
           <span class="px-2 py-0.5 rounded-full bg-feedback-success/10 text-feedback-success text-xs font-semibold flex items-center space-x-0.5">
             <svg class="w-2.5 h-2.5"><use href="assets/icons.svg#icon-arrow-up-right"></use></svg>
             <span>Live</span>
@@ -196,16 +189,16 @@
 
           <!-- Tooltip Overlay -->
           <div class="absolute left-[52%] bottom-[60%] bg-card border border-border shadow-xl rounded-xl p-3 z-20 pointer-events-none scale-100 transition-all duration-300">
-            <div class="text-[10px] font-bold text-text-secondary">January 2028</div>
+            <div class="text-[10px] font-bold text-text-secondary">{{ currentMonthLabel }}</div>
             <div class="flex items-center space-x-1.5 text-[11px] font-semibold mt-1">
               <span class="w-2 h-2 rounded-full bg-accent-secondary"></span>
               <span class="text-text-secondary">{{ 'DASHBOARD.SAVINGS' | translate }}:</span>
-              <span class="text-text-primary font-bold">₹3,200</span>
+              <span class="text-text-primary font-bold">{{ (cashFlowSummary?.netCashFlow ?? 0) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
             </div>
             <div class="flex items-center space-x-1.5 text-[11px] font-semibold mt-0.5">
               <span class="w-2 h-2 rounded-full bg-accent-tertiary"></span>
               <span class="text-text-secondary">{{ 'DASHBOARD.SPENDING' | translate }}:</span>
-              <span class="text-text-primary font-bold">₹5,100</span>
+              <span class="text-text-primary font-bold">{{ (cashFlowSummary?.totalExpense ?? 0) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}</span>
             </div>
           </div>
         </div>

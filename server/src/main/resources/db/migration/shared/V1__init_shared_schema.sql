@@ -46,7 +46,22 @@ INSERT INTO financial_category (code, name, domain, description) VALUES
 ('AUTO_LOAN', 'Vehicle / Auto Loan', 'LIABILITY', 'Loan taken for purchasing cars or two-wheelers'),
 ('PERSONAL_LOAN', 'Personal Loan', 'LIABILITY', 'Unsecured personal bank loan'),
 ('EDUCATION_LOAN', 'Education Loan', 'LIABILITY', 'Student loan for higher education'),
-('CREDIT_CARD', 'Credit Card Outstanding', 'LIABILITY', 'Revolving credit card balance and short-term debt')
+('CREDIT_CARD', 'Credit Card Outstanding', 'LIABILITY', 'Revolving credit card balance and short-term debt'),
+
+-- Income Categories
+('SALARY', 'Salary & Wages', 'INCOME', 'Monthly salary, bonuses, and professional compensation'),
+('INTEREST', 'Interest Income', 'INCOME', 'Savings account, fixed deposit, and bond interest earned'),
+('RENTAL', 'Rental Income', 'INCOME', 'Income generated from real estate and property rentals'),
+('CAPITAL_GAINS', 'Capital Gains', 'INCOME', 'Profits from sale of investments, stocks, or assets'),
+('DIVIDEND', 'Dividends', 'INCOME', 'Stock and mutual fund dividend payouts'),
+('BUSINESS', 'Business & Freelance', 'INCOME', 'Revenue from business, consulting, or freelance work'),
+('OTHER_INCOME', 'Other Income', 'INCOME', 'Miscellaneous or irregular income'),
+
+-- Transfer Categories
+('FAMILY_TRANSFER', 'Family Transfer', 'TRANSFER', 'Transfers to and from family members'),
+('PEER_TRANSFER', 'Peer Loan / Transfer', 'TRANSFER', 'Occasional transfers and loans to friends or peers'),
+('INTER_ACCOUNT', 'Inter-Account Transfer', 'TRANSFER', 'Self transfer across own bank and trading accounts'),
+('REMITTANCE', 'Remittance', 'TRANSFER', 'Inward or outward remittance')
 ON CONFLICT (code) DO NOTHING;
 
 -- 2. Master User Identity & Tenant Mapping

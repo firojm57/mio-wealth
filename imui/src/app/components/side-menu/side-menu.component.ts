@@ -28,8 +28,7 @@ export class SideMenuComponent {
     { name: 'Overview', tab: 'Overview', route: 'overview', icon: 'icon-home', translationKey: 'NAV.OVERVIEW' },
     { name: 'Investments', tab: 'Investments', route: 'investments', icon: 'icon-investments', translationKey: 'NAV.INVESTMENTS' },
     { name: 'Cash Flow', tab: 'Cash Flow', route: 'cash-flow', icon: 'icon-cashflow', translationKey: 'NAV.CASH_FLOW' },
-    { name: 'Expenses', tab: 'Expenses', route: 'expenses', icon: 'icon-expenses', translationKey: 'NAV.EXPENSES' },
-    { name: 'Performance', tab: 'Performance', route: 'performance', icon: 'icon-performance', translationKey: 'NAV.PERFORMANCE' },
+    { name: 'Debt', tab: 'Debt', route: 'debt', icon: 'icon-liabilities', translationKey: 'NAV.DEBT' },
     { name: 'Balance', tab: 'Balance', route: 'balance', icon: 'icon-assets', translationKey: 'NAV.BALANCE' },
     { name: 'Goals', tab: 'Goals', route: 'goals', icon: 'icon-goals', translationKey: 'NAV.GOALS' }
   ];

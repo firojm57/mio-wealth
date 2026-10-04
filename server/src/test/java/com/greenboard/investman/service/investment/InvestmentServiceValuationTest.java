@@ -7,6 +7,7 @@ import com.greenboard.investman.repository.investment.InvestmentRepository;
 import com.greenboard.investman.service.investment.impl.InvestmentServiceImpl;
 import com.greenboard.investman.service.tag.TagService;
 import com.greenboard.investman.vo.investment.InvestmentRequestVO;
+import com.greenboard.investman.vo.investment.InvestmentSummaryVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
 import com.greenboard.investman.vo.investment.UpdatePercentageRequestVO;
 import org.junit.jupiter.api.BeforeEach;
@@ -151,7 +152,7 @@ class InvestmentServiceValuationTest {
 
         when(investmentRepository.findAll()).thenReturn(List.of(inv1, inv2));
 
-        com.greenboard.investman.vo.investment.InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
+        InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
 
         assertNotNull(summary);
         assertEquals(150000.0, summary.getTotalInvested());
@@ -187,7 +188,7 @@ class InvestmentServiceValuationTest {
 
         when(investmentRepository.findAll()).thenReturn(List.of(active, sold));
 
-        com.greenboard.investman.vo.investment.InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
+        InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
 
         assertNotNull(summary);
         assertEquals(150000.0, summary.getTotalInvested());
@@ -223,7 +224,7 @@ class InvestmentServiceValuationTest {
 
         when(investmentRepository.findAll()).thenReturn(List.of(active, sold));
 
-        com.greenboard.investman.vo.investment.InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
+        InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
 
         assertNotNull(summary);
         assertEquals(150000.0, summary.getTotalInvested());
@@ -238,7 +239,7 @@ class InvestmentServiceValuationTest {
     void testSummaryWithZeroInvestments() {
         when(investmentRepository.findAll()).thenReturn(List.of());
 
-        com.greenboard.investman.vo.investment.InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
+        InvestmentSummaryVO summary = investmentService.getInvestmentSummary();
 
         assertNotNull(summary);
         assertEquals(0.0, summary.getTotalInvested());

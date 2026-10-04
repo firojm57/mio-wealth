@@ -11,11 +11,21 @@ import { CategoryDTO, getDomainIcon } from '../../models/category.model';
 import { ModalDialogComponent } from '../../shared/components/modal-dialog/modal-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { TagInputComponent } from '../../shared/components/tag-input/tag-input.component';
+import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
+import { TableColumn, TableAction } from '../../shared/components/data-table/data-table.model';
 
 @Component({
   selector: 'app-investment',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, ModalDialogComponent, ConfirmDialogComponent, TagInputComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    ModalDialogComponent,
+    ConfirmDialogComponent,
+    TagInputComponent,
+    DataTableComponent
+  ],
   templateUrl: './investment.component.html',
   styleUrl: './investment.component.css'
 })
@@ -82,6 +92,61 @@ export class InvestmentComponent implements OnInit {
     if (filter === 'SOLD') return list.filter(h => this.isHoldingSold(h));
     return list;
   });
+
+  readonly tableColumns: TableColumn[] = [
+    { key: 'investmentDate', label: 'Date', type: 'date' },
+    { key: 'name', label: 'Asset Name' },
+    { key: 'categoryName', label: 'Category', type: 'badge' },
+    { key: 'period', label: 'Period Window', type: 'period', periodStartKey: 'investmentDate', periodEndKey: 'soldDate' },
+    { key: 'buyingPrice', label: 'Buying Cost' },
+    { key: 'currentValuation', label: 'Current Valuation' }
+  ];
+
+  readonly tableActions: TableAction<InvestmentHolding>[] = [
+    {
+      id: 'update-percent',
+      label: 'Update %',
+      variant: 'button',
+      visible: (row) => !this.isHoldingSold(row)
+    },
+    {
+      id: 'mark-sold',
+      label: 'Mark Sold',
+      variant: 'button',
+      tone: 'success',
+      visible: (row) => !this.isHoldingSold(row)
+    },
+    {
+      id: 'edit',
+      icon: 'icon-edit',
+      title: 'Edit Investment',
+      variant: 'icon'
+    },
+    {
+      id: 'delete',
+      icon: 'icon-trash',
+      title: 'Delete Investment',
+      variant: 'icon',
+      tone: 'danger'
+    }
+  ];
+
+  onTableAction(event: { actionId: string; row: InvestmentHolding }): void {
+    switch (event.actionId) {
+      case 'update-percent':
+        this.openUpdatePercentageModal(event.row);
+        break;
+      case 'mark-sold':
+        this.openQuickSoldModal(event.row);
+        break;
+      case 'edit':
+        this.openEditModal(event.row);
+        break;
+      case 'delete':
+        this.openDeleteModal(event.row);
+        break;
+    }
+  }
 
   ngOnInit(): void {
     this.refreshData();

@@ -3,6 +3,7 @@
   [title]="title()"
   maxWidth="md"
   (close)="cancel.emit()"
+  (closeModal)="cancel.emit()"
 >
   <div modal-body class="flex items-start space-x-4 pt-1">
     <div [ngClass]="getToneIconContainerClass()" class="shrink-0">

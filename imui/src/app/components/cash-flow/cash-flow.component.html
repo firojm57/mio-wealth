@@ -1,0 +1,453 @@
+<div class="space-y-4 md:space-y-5 animate-fade-in pb-8">
+  <!-- Summary KPI Cards (Positioned directly at top) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
+    <!-- 1. Total Income -->
+    <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Total Income</span>
+      <div class="text-2xl sm:text-3xl font-extrabold text-feedback-success tracking-tight mt-1.5">
+        {{ (summary?.totalIncome ?? 0) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-feedback-success"></span>
+        <span>Total earned cash inflow</span>
+      </div>
+    </div>
+
+    <!-- 2. Total Expenses -->
+    <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Total Expenses</span>
+      <div class="text-2xl sm:text-3xl font-extrabold text-feedback-danger tracking-tight mt-1.5">
+        {{ (summary?.totalExpense ?? 0) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-feedback-danger"></span>
+        <span>Total cash outflow</span>
+      </div>
+    </div>
+
+    <!-- 3. Net Cash Flow -->
+    <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Net Cash Flow</span>
+      <div class="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight mt-1.5" [class.text-feedback-success]="(summary?.netCashFlow ?? 0) > 0" [class.text-feedback-danger]="(summary?.netCashFlow ?? 0) < 0">
+        {{ (summary?.netCashFlow ?? 0) | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-secondary"></span>
+        <span>Income minus expenses</span>
+      </div>
+    </div>
+
+    <!-- 4. Savings Rate -->
+    <div class="p-4 sm:p-5 bg-card border border-border rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md">
+      <span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Savings Rate</span>
+      <div class="text-2xl sm:text-3xl font-extrabold text-accent-secondary tracking-tight mt-1.5">
+        {{ (summary?.savingsRate ?? 0) | number:'1.1-1' }}%
+      </div>
+      <div class="text-xs font-medium text-text-secondary mt-2 flex items-center space-x-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent-secondary"></span>
+        <span>Percentage retained</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Tab Switcher & Filters Row -->
+  <div class="space-y-3">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 border-b border-border">
+      <!-- 3 Primary Tabs (Income, Expenses, Transfers) -->
+      <nav class="flex space-x-6 sm:space-x-8 -mb-px" aria-label="Tabs">
+        @for (tab of tabs; track tab.key) {
+          <button
+            type="button"
+            (click)="selectTab(tab.key)"
+            [class.border-accent-primary]="activeTab === tab.key"
+            [class.text-accent-primary]="activeTab === tab.key"
+            [class.font-bold]="activeTab === tab.key"
+            [class.border-transparent]="activeTab !== tab.key"
+            [class.text-text-secondary]="activeTab !== tab.key"
+            class="group inline-flex items-center pb-3 px-1 border-b-2 font-medium text-sm transition-all duration-200 cursor-pointer space-x-2 hover:text-text-primary"
+          >
+            <svg
+              class="w-4 h-4 transition-colors"
+              [class.text-accent-primary]="activeTab === tab.key"
+              [class.text-text-secondary]="activeTab !== tab.key"
+              [class.group-hover:text-text-primary]="activeTab !== tab.key"
+            >
+              <use [attr.href]="'assets/icons.svg#' + tab.icon"></use>
+            </svg>
+            <span>{{ tab.label }}</span>
+          </button>
+        }
+      </nav>
+
+      <!-- Filters & Embedded Add Button Strip -->
+      <div class="flex items-center space-x-2.5 pb-2">
+        <!-- Search Input -->
+        <div class="relative">
+          <input
+            type="text"
+            [ngModel]="cashFlowService.searchQuery()"
+            (ngModelChange)="onSearchChange($event)"
+            placeholder="Search by title, tag..."
+            class="bg-card border border-border text-text-primary text-xs rounded-full pl-8 pr-3 py-1.5 w-44 sm:w-56 focus:outline-none focus:border-accent-primary"
+          />
+          <svg class="w-3.5 h-3.5 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+            <use href="assets/icons.svg#icon-search"></use>
+          </svg>
+        </div>
+
+        <!-- Category Dropdown -->
+        <select
+          [ngModel]="cashFlowService.selectedCategory()"
+          (ngModelChange)="onCategoryFilterChange($event)"
+          class="bg-card border border-border text-text-primary text-xs rounded-full px-3 py-1.5 focus:outline-none focus:border-accent-primary cursor-pointer"
+        >
+          <option value="ALL">All Categories</option>
+          @for (cat of domainCategories(); track cat.code) {
+            <option [value]="cat.code">{{ cat.name }}</option>
+          }
+        </select>
+
+        <!-- Embedded Add Button (Context-sensitive based on active tab) -->
+        <button
+          type="button"
+          (click)="openCreateModal()"
+          class="bg-accent-primary text-card px-3.5 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 hover:bg-accent-primary/90 flex items-center space-x-1.5 shadow-sm shadow-accent-primary/20 cursor-pointer whitespace-nowrap shrink-0"
+        >
+          <svg class="w-3.5 h-3.5"><use href="assets/icons.svg#icon-plus"></use></svg>
+          <span>Add {{ activeTab === 'INCOME' ? 'Income' : (activeTab === 'EXPENSE' ? 'Expense' : 'Transfer') }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Generic Data Table Component -->
+    <app-data-table
+      [columns]="tableColumns()"
+      [data]="transactionsPage?.content ?? []"
+      [loading]="cashFlowService.loading()"
+      [actions]="tableActions"
+      [pagination]="tablePagination()"
+      [customTemplates]="{
+        title: titleCell,
+        transferRoute: routeCell,
+        transferKind: transferKindCell,
+        amount: amountCell,
+        remarks: remarksCell
+      }"
+      [emptyTitle]="'No ' + activeTab.toLowerCase() + ' transactions found'"
+      [emptySubtitle]="'Click Add ' + (activeTab === 'INCOME' ? 'Income' : (activeTab === 'EXPENSE' ? 'Expense' : 'Transfer')) + ' to record your first entry.'"
+      emptyIcon="icon-cashflow"
+      (actionClick)="onTableAction($event)"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-data-table>
+  </div>
+</div>
+
+<!-- Custom Cell Templates for Data Table -->
+<ng-template #titleCell let-row="row">
+  <span class="font-semibold text-text-primary whitespace-nowrap">{{ row.title }}</span>
+</ng-template>
+
+<ng-template #routeCell let-row="row">
+  <div class="text-text-secondary whitespace-nowrap flex items-center space-x-1">
+    <span>{{ row.transferDetail?.source || 'Account' }}</span>
+    <span class="text-text-secondary/60">&rarr;</span>
+    <span>{{ row.transferDetail?.destination || 'Account' }}</span>
+  </div>
+</ng-template>
+
+<ng-template #transferKindCell let-row="row">
+  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-secondary/10 text-accent-secondary whitespace-nowrap">
+    {{ row.transferDetail?.transferKind || 'FAMILY' }}
+  </span>
+</ng-template>
+
+<ng-template #amountCell let-row="row">
+  <span
+    class="font-bold whitespace-nowrap"
+    [class.text-feedback-success]="row.transactionType === 'INCOME'"
+    [class.text-feedback-danger]="row.transactionType === 'EXPENSE'"
+    [class.text-text-primary]="row.transactionType === 'TRANSFER'"
+  >
+    {{ row.transactionType === 'INCOME' ? '+' : (row.transactionType === 'EXPENSE' ? '-' : '') }}{{ row.amount | currency:dashboardService.currencyCode():'symbol':'1.0-0' }}
+  </span>
+</ng-template>
+
+<ng-template #remarksCell let-row="row">
+  <span class="text-text-secondary max-w-[200px] truncate block" [title]="row.remarks || ''">
+    {{ row.remarks || '&mdash;' }}
+  </span>
+</ng-template>
+
+<!-- Modal Dialog: Create / Edit Transaction -->
+<app-modal-dialog
+  [isOpen]="isFormOpen()"
+  [title]="editingId() ? 'Edit Transaction' : 'Record ' + (activeTab === 'INCOME' ? 'Income' : (activeTab === 'EXPENSE' ? 'Expense' : 'Transfer'))"
+  [subtitle]="activeTab === 'INCOME' ? 'Record earnings, salary, dividends, or other cash inflows' : (activeTab === 'EXPENSE' ? 'Record expenditures, bills, or cash outflows' : 'Transfer funds between accounts or entities')"
+  maxWidth="2xl"
+  (close)="closeFormModal()"
+  (closeModal)="closeFormModal()"
+>
+  <div modal-body class="space-y-4">
+    <!-- Title -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Title / Description *</label>
+      <input
+        type="text"
+        [(ngModel)]="formData.title"
+        name="title"
+        required
+        placeholder="e.g. Salary, Rent, Grocery, Loan"
+        class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm focus:outline-none transition-colors"
+        [ngClass]="formSubmitted() && !formData.title.trim()
+          ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+          : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+      />
+      @if (formSubmitted() && !formData.title.trim()) {
+        <p class="text-[11px] font-medium text-feedback-danger mt-1">Title is required.</p>
+      }
+    </div>
+
+    <!-- Amount & Transaction Date Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+          Amount ({{ dashboardService.currencySymbol() }}) *
+        </label>
+        <input
+          type="number"
+          [(ngModel)]="formData.amount"
+          name="amount"
+          required
+          min="1"
+          step="any"
+          placeholder="0.00"
+          class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm font-bold focus:outline-none transition-colors"
+          [ngClass]="formSubmitted() && (!formData.amount || formData.amount <= 0)
+            ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+            : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+        />
+        @if (formSubmitted() && (!formData.amount || formData.amount <= 0)) {
+          <p class="text-[11px] font-medium text-feedback-danger mt-1">Positive amount is required.</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Date *</label>
+        <input
+          type="date"
+          [(ngModel)]="formData.transactionDate"
+          name="transactionDate"
+          required
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+        />
+      </div>
+    </div>
+
+    <!-- Category & Tags Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Category *</label>
+        <select
+          [(ngModel)]="formData.categoryCode"
+          name="categoryCode"
+          required
+          class="w-full px-4 py-2.5 rounded-xl border bg-background text-text-primary text-sm focus:outline-none transition-colors cursor-pointer"
+          [ngClass]="formSubmitted() && !formData.categoryCode
+            ? 'border-feedback-danger focus:ring-2 focus:ring-feedback-danger/20'
+            : 'border-border focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary'"
+        >
+          <option value="" disabled>Select category</option>
+          @for (cat of domainCategories(); track cat.code) {
+            <option [value]="cat.code">{{ cat.name }}</option>
+          }
+        </select>
+        @if (formSubmitted() && !formData.categoryCode) {
+          <p class="text-[11px] font-medium text-feedback-danger mt-1">Please select a category.</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Tags</label>
+        <app-tag-input
+          [(tagsString)]="formData.tags"
+          [domain]="activeTab"
+          placeholder="Select or type tags..."
+        ></app-tag-input>
+      </div>
+    </div>
+
+    <!-- Temporal Coverage (For INCOME Tab) -->
+    @if (formData.transactionType === 'INCOME') {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Period Start (Optional)</label>
+          <input
+            type="date"
+            [(ngModel)]="formData.periodStart"
+            name="periodStart"
+            class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Period End (Optional)</label>
+          <input
+            type="date"
+            [(ngModel)]="formData.periodEnd"
+            name="periodEnd"
+            class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+          />
+        </div>
+      </div>
+    }
+
+    <!-- Transfer Detail (For TRANSFER Tab) -->
+    @if (formData.transactionType === 'TRANSFER') {
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Source (From) *</label>
+            <input
+              type="text"
+              [(ngModel)]="formData.transferDetail!.source"
+              name="source"
+              placeholder="e.g. HDFC Bank"
+              class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Destination (To) *</label>
+            <input
+              type="text"
+              [(ngModel)]="formData.transferDetail!.destination"
+              name="destination"
+              placeholder="e.g. Savings Account"
+              class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+            />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Transfer Kind</label>
+          <select
+            [(ngModel)]="formData.transferDetail!.transferKind"
+            name="transferKind"
+            class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors cursor-pointer"
+          >
+            @for (kind of transferKinds; track kind) {
+              <option [value]="kind">{{ kind }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    }
+
+    <!-- Remarks -->
+    <div>
+      <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Remarks / Details (Optional)</label>
+      <input
+        type="text"
+        [(ngModel)]="formData.remarks"
+        name="remarks"
+        placeholder="Enter notes, folio number, or transaction details (optional)"
+        class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+      />
+    </div>
+
+    <!-- Collapsible Tax Profile Section -->
+    <div class="border border-border/80 rounded-2xl overflow-hidden bg-background/30">
+      <button
+        type="button"
+        (click)="toggleTaxProfile()"
+        class="w-full px-4 py-3 flex items-center justify-between text-left cursor-pointer hover:bg-background/60 transition-colors"
+      >
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-text-secondary">Tax &amp; Fiscal Profile</span>
+          <span class="text-[11px] text-text-secondary/70 font-normal">(Optional, for tax filings)</span>
+        </div>
+        <svg class="w-4 h-4 text-text-secondary transition-transform duration-200" [class.rotate-180]="isTaxProfileExpanded()">
+          <use href="assets/icons.svg#icon-chevron-down"></use>
+        </svg>
+      </button>
+
+      @if (isTaxProfileExpanded() && formData.taxProfile) {
+        <div class="p-4 pt-2 border-t border-border/60 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Financial Year</label>
+              <input
+                type="text"
+                [(ngModel)]="formData.taxProfile.financialYear"
+                name="financialYear"
+                placeholder="e.g. 2026-2027"
+                class="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">Tax Head</label>
+              <select
+                [(ngModel)]="formData.taxProfile.taxHead"
+                name="taxHead"
+                class="w-full px-3.5 py-2 rounded-xl border border-border bg-card text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary transition-colors cursor-pointer"
+              >
+                @for (head of taxHeads; track head) {
+                  <option [value]="head">{{ head }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 pt-1">
+            <input
+              type="checkbox"
+              id="isTaxable"
+              [(ngModel)]="formData.taxProfile.isTaxable"
+              name="isTaxable"
+              class="w-4 h-4 rounded border-border text-accent-primary focus:ring-0 cursor-pointer"
+            />
+            <label for="isTaxable" class="text-xs font-medium text-text-primary cursor-pointer select-none">
+              Is Taxable Transaction
+            </label>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Modal Footer Actions -->
+  <div modal-footer class="flex items-center justify-end space-x-3 w-full">
+    <button
+      type="button"
+      (click)="closeFormModal()"
+      [disabled]="isSubmitting()"
+      class="px-5 py-2 rounded-full font-medium text-xs text-text-primary bg-card hover:bg-background border border-border shadow-sm cursor-pointer transition-colors duration-300 disabled:opacity-50"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      (click)="saveTransaction()"
+      [disabled]="isSubmitting()"
+      class="px-6 py-2 rounded-full font-semibold text-xs bg-accent-primary hover:bg-accent-primary/90 text-card shadow-md shadow-accent-primary/10 cursor-pointer transition-colors duration-300 flex items-center space-x-1.5 disabled:opacity-50"
+    >
+      @if (isSubmitting()) {
+        <svg class="w-4 h-4 animate-spin mr-1" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      }
+      <span>{{ editingId() ? 'Update Transaction' : 'Save Transaction' }}</span>
+    </button>
+  </div>
+</app-modal-dialog>
+
+<!-- Delete Confirmation Dialog -->
+<app-confirm-dialog
+  [isOpen]="isDeleteOpen()"
+  title="Delete Transaction"
+  [message]="'Are you sure you want to delete \'' + (deleteTarget()?.title || 'this transaction') + '\'? This action cannot be undone.'"
+  confirmText="Delete"
+  cancelText="Cancel"
+  tone="danger"
+  [isSubmitting]="isSubmitting()"
+  (confirm)="confirmDelete()"
+  (cancel)="closeDeleteModal()"
+></app-confirm-dialog>

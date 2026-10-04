@@ -27,7 +27,7 @@
             @if (showCloseButton()) {
               <button
                 type="button"
-                (click)="close.emit()"
+                (click)="closeModalInternal()"
                 class="p-1 rounded-full hover:bg-background text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
                 aria-label="Close"
               >

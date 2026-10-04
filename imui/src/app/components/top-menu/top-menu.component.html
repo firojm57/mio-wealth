@@ -19,20 +19,9 @@
     <span class="font-extrabold text-lg md:text-xl tracking-tight text-text-primary">Mio<span class="font-semibold"> Wealth</span></span>
   </div>
 
-  <!-- Right: Search, Notification Bell, Theme Toggle, User Profile Dropdown -->
+  <!-- Right: Notification Bell, Theme Toggle, User Profile Dropdown -->
   <div class="flex items-center space-x-3.5">
-    <!-- Search input box (Hidden on mobile) -->
-    <div class="relative hidden sm:block">
-      <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary">
-        <svg class="w-4.5 h-4.5">
-          <use href="assets/icons.svg#icon-search"></use>
-        </svg>
-      </span>
-      <input type="text" placeholder="Search..."
-        class="pl-9 pr-4 py-1.5 w-44 md:w-56 text-sm rounded-full bg-background border border-border text-text-primary placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-accent-secondary transition-all duration-300" />
-    </div>
-
-    <!-- Theme Toggle Button (strictly positioned between Search and User Profile) -->
+    <!-- Theme Toggle Button -->
     <button (click)="dashboardService.toggleTheme()"
       class="w-9 h-9 rounded-full flex items-center justify-center border border-border text-text-primary hover:bg-background transition-all duration-300 cursor-pointer shadow-sm"
       [title]="'APP.THEME_TOGGLE' | translate">

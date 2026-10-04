@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.greenboard.investman.config.FlexibleLocalDateTimeDeserializer;
 import java.time.LocalDateTime;
@@ -36,10 +37,10 @@ public class InvestmentRequestVO {
     @JsonDeserialize(using = FlexibleLocalDateTimeDeserializer.class)
     private LocalDateTime investmentDate;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("isSold")
+    @JsonProperty("isSold")
     private Boolean isSold;
 
-    @com.fasterxml.jackson.annotation.JsonProperty("sold")
+    @JsonProperty("sold")
     public void setSold(Boolean sold) {
         if (this.isSold == null) {
             this.isSold = sold;

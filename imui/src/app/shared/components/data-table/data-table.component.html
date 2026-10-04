@@ -1,0 +1,179 @@
+<div class="bg-card border border-border rounded-2xl shadow-sm overflow-hidden transition-colors duration-200">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-background/60 text-text-secondary font-semibold border-b border-border uppercase tracking-wider text-[10px]">
+        <tr>
+          @for (col of columns; track col.key) {
+            <th
+              class="px-5 py-3"
+              [class]="col.headerClass || ''"
+              [class.text-left]="!col.align || col.align === 'left'"
+              [class.text-center]="col.align === 'center'"
+              [class.text-right]="col.align === 'right'"
+              [style.width]="col.width || null"
+            >
+              {{ col.label }}
+            </th>
+          }
+          @if (hasActions) {
+            <th class="px-5 py-3 text-right">Actions</th>
+          }
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border/40">
+        @if (loading) {
+          <tr>
+            <td [attr.colspan]="totalColumns" class="px-5 py-10 text-center text-text-secondary font-medium">
+              <div class="flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4 animate-spin text-accent-primary" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading records...</span>
+              </div>
+            </td>
+          </tr>
+        } @else if (data.length === 0) {
+          <tr>
+            <td [attr.colspan]="totalColumns" class="px-5 py-10 text-center">
+              <div class="flex flex-col items-center justify-center space-y-1.5">
+                <svg class="w-8 h-8 text-text-secondary mb-1">
+                  <use [attr.href]="'assets/icons.svg#' + (emptyIcon || 'icon-investments')"></use>
+                </svg>
+                <p class="font-semibold text-text-primary text-xs">{{ emptyTitle || 'No records found' }}</p>
+                @if (emptySubtitle) {
+                  <p class="text-[11px] text-text-secondary max-w-sm">{{ emptySubtitle }}</p>
+                }
+              </div>
+            </td>
+          </tr>
+        } @else {
+          @for (row of data; track trackRow(row)) {
+            <tr class="hover:bg-background/40 transition-colors">
+              @for (col of columns; track col.key) {
+                <td
+                  class="px-5 py-3"
+                  [class]="col.cellClass || ''"
+                  [class.text-left]="!col.align || col.align === 'left'"
+                  [class.text-center]="col.align === 'center'"
+                  [class.text-right]="col.align === 'right'"
+                >
+                  @if (customTemplates && customTemplates[col.key]) {
+                    <ng-container
+                      *ngTemplateOutlet="customTemplates[col.key]; context: { $implicit: row, row: row, value: row[col.key] }"
+                    ></ng-container>
+                  } @else if (col.type === 'date') {
+                    @if (row[col.key]) {
+                      <span class="font-medium text-text-secondary whitespace-nowrap">{{ row[col.key] | date:'mediumDate' }}</span>
+                    } @else {
+                      <span class="text-text-secondary/40 text-xs">&mdash;</span>
+                    }
+                  } @else if (col.type === 'period') {
+                    @let pStart = row[col.periodStartKey || 'periodStart'];
+                    @let pEnd = row[col.periodEndKey || 'periodEnd'];
+                    @if (pStart && pEnd) {
+                      <span class="text-[11px] font-medium text-text-secondary whitespace-nowrap">
+                        {{ pStart | date:'mediumDate' }} &ndash; {{ pEnd | date:'mediumDate' }}
+                      </span>
+                    } @else if (pStart) {
+                      <span class="text-[11px] font-medium text-text-secondary whitespace-nowrap">
+                        {{ pStart | date:'mediumDate' }} &ndash; Present
+                      </span>
+                    } @else {
+                      <span class="text-text-secondary/40 text-xs">&mdash;</span>
+                    }
+                  } @else if (col.type === 'badge') {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-background border border-border text-text-primary whitespace-nowrap">
+                      {{ row[col.key] || row['categoryName'] || row['categoryCode'] }}
+                    </span>
+                  } @else if (col.type === 'currency') {
+                    <span class="font-bold text-xs text-text-primary whitespace-nowrap">
+                      {{ row[col.key] | currency:currencyCode:'symbol':'1.0-0' }}
+                    </span>
+                  } @else {
+                    <span>{{ row[col.key] ?? '—' }}</span>
+                  }
+                </td>
+              }
+
+              @if (hasActions) {
+                <td class="px-5 py-3 text-right whitespace-nowrap">
+                  @if (actionsTemplate) {
+                    <ng-container
+                      *ngTemplateOutlet="actionsTemplate; context: { $implicit: row, row: row }"
+                    ></ng-container>
+                  } @else {
+                    <div class="flex items-center justify-end space-x-1.5">
+                      @for (action of actions; track action.id) {
+                        @if (isActionVisible(action, row)) {
+                          <button
+                            type="button"
+                            (click)="onAction(action.id, row)"
+                            [disabled]="isActionDisabled(action, row)"
+                            [class]="getActionClasses(action)"
+                            [title]="action.title || action.label || ''"
+                          >
+                            @if (action.icon) {
+                              <svg class="w-3.5 h-3.5" [class.mr-1]="action.variant === 'button' && action.label">
+                                <use [attr.href]="'assets/icons.svg#' + action.icon"></use>
+                              </svg>
+                            }
+                            @if (action.label) {
+                              <span>{{ action.label }}</span>
+                            }
+                          </button>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Strip -->
+  @if (pagination && pagination.totalElements > 0) {
+    <div class="px-5 py-2.5 bg-background/40 border-t border-border flex flex-col sm:flex-row items-center justify-between text-xs text-text-secondary gap-2">
+      <div class="flex items-center space-x-2">
+        <span>Showing {{ (pagination.pageIndex * pagination.pageSize) + 1 }} - {{ getRangeEnd() }} of {{ pagination.totalElements }}</span>
+        @if (pagination.pageSizeOptions && pagination.pageSizeOptions.length > 0) {
+          <select
+            [ngModel]="pagination.pageSize"
+            (ngModelChange)="onPageSizeChange($event)"
+            class="bg-card border border-border text-text-primary text-[11px] rounded-md px-2 py-0.5 ml-2 focus:outline-none cursor-pointer"
+          >
+            @for (size of pagination.pageSizeOptions; track size) {
+              <option [value]="size">{{ size }} / page</option>
+            }
+          </select>
+        }
+      </div>
+
+      <div class="flex items-center space-x-1.5">
+        <button
+          type="button"
+          [disabled]="pagination.pageIndex === 0"
+          (click)="onPageChange(pagination.pageIndex - 1)"
+          class="px-2.5 py-1 rounded-md border border-border bg-card text-text-primary text-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-background transition-colors cursor-pointer"
+        >
+          Previous
+        </button>
+        <span class="px-2 text-text-primary font-semibold text-xs">
+          Page {{ pagination.pageIndex + 1 }} of {{ getEffectiveTotalPages() }}
+        </span>
+        <button
+          type="button"
+          [disabled]="isLastPage()"
+          (click)="onPageChange(pagination.pageIndex + 1)"
+          class="px-2.5 py-1 rounded-md border border-border bg-card text-text-primary text-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-background transition-colors cursor-pointer"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  }
+</div>

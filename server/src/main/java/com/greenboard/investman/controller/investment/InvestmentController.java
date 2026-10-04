@@ -5,6 +5,7 @@ import com.greenboard.investman.vo.investment.InvestmentRequestVO;
 import com.greenboard.investman.vo.investment.InvestmentSummaryVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
 import com.greenboard.investman.vo.investment.MarkSoldRequestVO;
+import com.greenboard.investman.vo.investment.UpdatePercentageRequestVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -132,7 +133,7 @@ public class InvestmentController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<InvestmentVO> updateCurrentPercentage(@PathVariable String id,
-                                                                @Valid @RequestBody com.greenboard.investman.vo.investment.UpdatePercentageRequestVO request) {
+                                                                @Valid @RequestBody UpdatePercentageRequestVO request) {
         log.info("Updating % change for investment #{} to {}%", id, request.getCurrentPercentageChange());
         return ResponseEntity.ok(investmentService.updateCurrentPercentage(id, request));
     }
