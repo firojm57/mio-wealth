@@ -1,0 +1,5 @@
+/* Cash Flow Component Styles */
+:host {
+  display: block;
+  width: 100%;
+}

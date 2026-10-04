@@ -16,17 +16,23 @@ export class ModalDialogComponent {
   readonly closeOnBackdrop = input<boolean>(true);
 
   readonly close = output<void>();
+  readonly closeModal = output<void>();
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.isOpen()) {
-      this.close.emit();
+  @HostListener('document:keydown', ['$event'])
+  onEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.isOpen()) {
+      this.closeModalInternal();
     }
+  }
+
+  closeModalInternal(): void {
+    this.close.emit();
+    this.closeModal.emit();
   }
 
   onBackdropClick(event: MouseEvent): void {
     if (this.closeOnBackdrop() && event.target === event.currentTarget) {
-      this.close.emit();
+      this.closeModalInternal();
     }
   }
 

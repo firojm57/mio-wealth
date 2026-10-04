@@ -7,6 +7,9 @@ import { InvestmentComponent } from './components/investment/investment.componen
 import { BalanceComponent } from './components/balance/balance.component';
 import { SectionPlaceholderComponent } from './components/section-placeholder/section-placeholder.component';
 
+import { CashFlowComponent } from './components/cash-flow/cash-flow.component';
+import { DebtComponent } from './components/debt/debt.component';
+
 export const routes: Routes = [
   {
     path: 'login',
@@ -33,18 +36,23 @@ export const routes: Routes = [
   },
   {
     path: 'cash-flow',
-    component: SectionPlaceholderComponent,
+    component: CashFlowComponent,
     canActivate: [authGuard]
   },
   {
     path: 'expenses',
-    component: SectionPlaceholderComponent,
+    redirectTo: 'cash-flow',
+    pathMatch: 'full'
+  },
+  {
+    path: 'debt',
+    component: DebtComponent,
     canActivate: [authGuard]
   },
   {
     path: 'performance',
-    component: SectionPlaceholderComponent,
-    canActivate: [authGuard]
+    redirectTo: 'debt',
+    pathMatch: 'full'
   },
   {
     path: 'goals',

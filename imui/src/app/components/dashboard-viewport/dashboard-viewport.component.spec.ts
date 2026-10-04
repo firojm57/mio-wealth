@@ -1,4 +1,6 @@
 import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { DashboardViewportComponent } from './dashboard-viewport.component';
 import { TranslateModule } from '@ngx-translate/core';
 import { DashboardService } from '../../services/dashboard.service';
@@ -11,7 +13,11 @@ describe('DashboardViewportComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardViewportComponent, TranslateModule.forRoot()],
-      providers: [DashboardService]
+      providers: [
+        DashboardService,
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardViewportComponent);

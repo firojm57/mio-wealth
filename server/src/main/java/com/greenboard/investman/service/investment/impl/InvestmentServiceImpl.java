@@ -1,23 +1,34 @@
 package com.greenboard.investman.service.investment.impl;
 
 import com.greenboard.investman.model.category.FinancialCategory;
+import com.greenboard.investman.model.cashflow.TaxHead;
+import com.greenboard.investman.model.cashflow.TransactionType;
 import com.greenboard.investman.model.investment.Investment;
 import com.greenboard.investman.repository.category.FinancialCategoryRepository;
 import com.greenboard.investman.repository.investment.InvestmentRepository;
+import com.greenboard.investman.service.cashflow.CashTransactionService;
 import com.greenboard.investman.service.investment.InvestmentService;
 import com.greenboard.investman.service.tag.TagService;
+import com.greenboard.investman.vo.cashflow.CashTransactionRequestVO;
+import com.greenboard.investman.vo.cashflow.TaxProfileVO;
 import com.greenboard.investman.vo.investment.InvestmentRequestVO;
+import com.greenboard.investman.vo.investment.InvestmentSummaryVO;
 import com.greenboard.investman.vo.investment.InvestmentVO;
 import com.greenboard.investman.vo.investment.MarkSoldRequestVO;
 import com.greenboard.investman.vo.investment.UpdatePercentageRequestVO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,13 +41,23 @@ public class InvestmentServiceImpl implements InvestmentService {
     private final InvestmentRepository investmentRepository;
     private final FinancialCategoryRepository categoryRepository;
     private final TagService tagService;
+    private final CashTransactionService cashTransactionService;
 
     public InvestmentServiceImpl(InvestmentRepository investmentRepository,
                                  FinancialCategoryRepository categoryRepository,
                                  TagService tagService) {
+        this(investmentRepository, categoryRepository, tagService, null);
+    }
+
+    @Autowired
+    public InvestmentServiceImpl(InvestmentRepository investmentRepository,
+                                 FinancialCategoryRepository categoryRepository,
+                                 TagService tagService,
+                                 CashTransactionService cashTransactionService) {
         this.investmentRepository = investmentRepository;
         this.categoryRepository = categoryRepository;
         this.tagService = tagService;
+        this.cashTransactionService = cashTransactionService;
     }
 
     @Override
@@ -181,10 +202,65 @@ public class InvestmentServiceImpl implements InvestmentService {
 
         investment.setSold(true);
         investment.setSellingPrice(request.getSellingPrice());
-        investment.setSoldDate(request.getSoldDate() != null ? request.getSoldDate() : LocalDateTime.now());
+        LocalDateTime soldDateTime = request.getSoldDate() != null ? request.getSoldDate() : LocalDateTime.now();
+        investment.setSoldDate(soldDateTime);
 
         Investment updated = investmentRepository.save(investment);
         log.info("Marked investment #{} as sold (sellingPrice: {})", updated.getId(), updated.getSellingPrice());
+
+        if (cashTransactionService != null && request.getSellingPrice() != null) {
+            try {
+                double buyingCost = investment.getBuyingPrice();
+                double sellingPrice = request.getSellingPrice();
+                double profitOrLoss = sellingPrice - buyingCost;
+
+                long daysHeld = investment.getInvestmentDate() != null
+                        ? ChronoUnit.DAYS.between(investment.getInvestmentDate(), soldDateTime)
+                        : 0;
+                boolean isLongTerm = daysHeld >= 365;
+
+                LocalDate periodStart = investment.getInvestmentDate() != null
+                        ? investment.getInvestmentDate().toLocalDate()
+                        : null;
+                LocalDate periodEnd = soldDateTime.toLocalDate();
+
+                if (profitOrLoss > 0) {
+                    CashTransactionRequestVO cashTxn = CashTransactionRequestVO.builder()
+                            .transactionType(TransactionType.INCOME)
+                            .title("Realized Profit: " + investment.getAssetName())
+                            .amount(BigDecimal.valueOf(profitOrLoss).setScale(2, RoundingMode.HALF_UP))
+                            .transactionDate(soldDateTime.toLocalDate())
+                            .categoryCode("CAPITAL_GAINS")
+                            .periodStart(periodStart)
+                            .periodEnd(periodEnd)
+                            .taxProfile(TaxProfileVO.builder()
+                                    .taxHead(isLongTerm ? TaxHead.CAPITAL_GAINS_LTCG : TaxHead.CAPITAL_GAINS_STCG)
+                                    .isTaxable(true)
+                                    .build())
+                            .remarks("Automated liquidation entry on sale of " + investment.getAssetName())
+                            .build();
+                    cashTransactionService.createTransaction(cashTxn);
+                } else if (profitOrLoss < 0) {
+                    CashTransactionRequestVO cashTxn = CashTransactionRequestVO.builder()
+                            .transactionType(TransactionType.INCOME)
+                            .title("Realized Capital Loss: " + investment.getAssetName())
+                            .amount(BigDecimal.valueOf(Math.abs(profitOrLoss)).setScale(2, RoundingMode.HALF_UP))
+                            .transactionDate(soldDateTime.toLocalDate())
+                            .categoryCode("CAPITAL_GAINS")
+                            .periodStart(periodStart)
+                            .periodEnd(periodEnd)
+                            .taxProfile(TaxProfileVO.builder()
+                                    .taxHead(isLongTerm ? TaxHead.CAPITAL_GAINS_LTCG : TaxHead.CAPITAL_GAINS_STCG)
+                                    .isTaxable(false)
+                                    .build())
+                            .remarks("Capital loss record from liquidation of " + investment.getAssetName())
+                            .build();
+                    cashTransactionService.createTransaction(cashTxn);
+                }
+            } catch (Exception ex) {
+                log.warn("Could not record cash flow entry on investment liquidation #{}: {}", id, ex.getMessage());
+            }
+        }
 
         return toVO(updated);
     }
@@ -206,10 +282,10 @@ public class InvestmentServiceImpl implements InvestmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public com.greenboard.investman.vo.investment.InvestmentSummaryVO getInvestmentSummary() {
+    public InvestmentSummaryVO getInvestmentSummary() {
         List<Investment> investments = investmentRepository.findAll();
         if (CollectionUtils.isEmpty(investments)) {
-            return com.greenboard.investman.vo.investment.InvestmentSummaryVO.builder().build();
+            return InvestmentSummaryVO.builder().build();
         }
 
         double totalInvested = 0.0;
@@ -238,7 +314,7 @@ public class InvestmentServiceImpl implements InvestmentService {
         double realizedPL = soldProceeds - soldCost;
         double realizedPct = soldCost > 0 ? (realizedPL / soldCost) * 100.0 : 0.0;
 
-        return com.greenboard.investman.vo.investment.InvestmentSummaryVO.builder()
+        return InvestmentSummaryVO.builder()
                 .totalInvested(round2(totalInvested))
                 .currentPortfolioValue(round2(activeValue + soldProceeds))
                 .unrealizedProfitLoss(round2(unrealizedPL))

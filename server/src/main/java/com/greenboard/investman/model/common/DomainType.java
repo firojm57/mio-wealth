@@ -4,5 +4,7 @@ public enum DomainType {
     INVESTMENT,
     SAVING,
     EXPENSE,
-    LIABILITY
+    LIABILITY,
+    INCOME,
+    TRANSFER
 }

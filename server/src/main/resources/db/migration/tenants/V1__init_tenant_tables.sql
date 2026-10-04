@@ -74,7 +74,22 @@ INSERT INTO category (code, name, domain, description, is_custom) VALUES
 ('AUTO_LOAN', 'Vehicle / Auto Loan', 'LIABILITY', 'Loan taken for purchasing cars or two-wheelers', false),
 ('PERSONAL_LOAN', 'Personal Loan', 'LIABILITY', 'Unsecured personal bank loan', false),
 ('EDUCATION_LOAN', 'Education Loan', 'LIABILITY', 'Student loan for higher education', false),
-('CREDIT_CARD', 'Credit Card Outstanding', 'LIABILITY', 'Revolving credit card balance and short-term debt', false)
+('CREDIT_CARD', 'Credit Card Outstanding', 'LIABILITY', 'Revolving credit card balance and short-term debt', false),
+
+-- Income Categories
+('SALARY', 'Salary & Wages', 'INCOME', 'Monthly salary, bonuses, and professional compensation', false),
+('INTEREST', 'Interest Income', 'INCOME', 'Savings account, fixed deposit, and bond interest earned', false),
+('RENTAL', 'Rental Income', 'INCOME', 'Income generated from real estate and property rentals', false),
+('CAPITAL_GAINS', 'Capital Gains', 'INCOME', 'Profits from sale of investments, stocks, or assets', false),
+('DIVIDEND', 'Dividends', 'INCOME', 'Stock and mutual fund dividend payouts', false),
+('BUSINESS', 'Business & Freelance', 'INCOME', 'Revenue from business, consulting, or freelance work', false),
+('OTHER_INCOME', 'Other Income', 'INCOME', 'Miscellaneous or irregular income', false),
+
+-- Transfer Categories
+('FAMILY_TRANSFER', 'Family Transfer', 'TRANSFER', 'Transfers to and from family members', false),
+('PEER_TRANSFER', 'Peer Loan / Transfer', 'TRANSFER', 'Occasional transfers and loans to friends or peers', false),
+('INTER_ACCOUNT', 'Inter-Account Transfer', 'TRANSFER', 'Self transfer across own bank and trading accounts', false),
+('REMITTANCE', 'Remittance', 'TRANSFER', 'Inward or outward remittance', false)
 ON CONFLICT (code) DO NOTHING;
 
 -- 4. Tenant Tag Catalog
@@ -154,6 +169,41 @@ CREATE TABLE IF NOT EXISTS expense (
     CONSTRAINT fk_expense_category FOREIGN KEY (category_code) REFERENCES category (code)
 );
 
+-- 9. Tenant Cash Flow Ledger (Core)
+CREATE TABLE IF NOT EXISTS cash_transaction (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    transaction_type VARCHAR(20) NOT NULL, -- 'INCOME', 'EXPENSE', 'TRANSFER'
+    title VARCHAR(150) NOT NULL,
+    amount NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    transaction_date DATE NOT NULL,
+    category_code VARCHAR(50) NOT NULL,
+    period_start DATE,
+    period_end DATE,
+    remarks VARCHAR(500),
+    tags VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_cash_txn_category FOREIGN KEY (category_code) REFERENCES category (code)
+);
+
+-- 10. Transfer Detail Extension (TRANSFER transactions only)
+CREATE TABLE IF NOT EXISTS transfer_detail (
+    transaction_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    source VARCHAR(100),
+    destination VARCHAR(100),
+    transfer_kind VARCHAR(30) NOT NULL, -- 'FAMILY', 'PEER_LOAN', 'INTER_ACCOUNT', 'REMITTANCE'
+    CONSTRAINT fk_transfer_cash_txn FOREIGN KEY (transaction_id) REFERENCES cash_transaction (id) ON DELETE CASCADE
+);
+
+-- 11. Tax Profile Extension (Fiscal reporting and future tax calculations)
+CREATE TABLE IF NOT EXISTS tax_profile (
+    transaction_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    financial_year VARCHAR(10) NOT NULL,
+    tax_head VARCHAR(50),
+    is_taxable BOOLEAN NOT NULL DEFAULT true,
+    CONSTRAINT fk_tax_cash_txn FOREIGN KEY (transaction_id) REFERENCES cash_transaction (id) ON DELETE CASCADE
+);
+
 -- Indexes for lightning fast queries within tenant schema
 CREATE INDEX IF NOT EXISTS idx_category_domain ON category(domain);
 CREATE INDEX IF NOT EXISTS idx_tag_domain ON tag(domain);
@@ -162,3 +212,8 @@ CREATE INDEX IF NOT EXISTS idx_investment_is_sold ON investment(is_sold);
 CREATE INDEX IF NOT EXISTS idx_saving_category ON saving(category_code);
 CREATE INDEX IF NOT EXISTS idx_liability_category ON liability(category_code);
 CREATE INDEX IF NOT EXISTS idx_expense_category ON expense(category_code);
+CREATE INDEX IF NOT EXISTS idx_cash_txn_date ON cash_transaction(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_cash_txn_type ON cash_transaction(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_cash_txn_cat ON cash_transaction(category_code);
+CREATE INDEX IF NOT EXISTS idx_tax_profile_fy ON tax_profile(financial_year);
+CREATE INDEX IF NOT EXISTS idx_tax_profile_head ON tax_profile(tax_head);

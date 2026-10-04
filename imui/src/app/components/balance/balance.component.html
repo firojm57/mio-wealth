@@ -1,30 +1,18 @@
-<div class="space-y-6 animate-fade-in">
-  <!-- Header Title -->
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-    <div>
-      <h1 class="text-3xl font-bold tracking-tight text-text-primary">
-        {{ 'NAV.BALANCE' | translate }} Sheet
-      </h1>
-      <p class="font-medium text-sm text-text-secondary mt-1">
-        Detailed breakdown of your current capital assets against liabilities.
-      </p>
-    </div>
-    
-    <!-- Action Pills -->
-    <div class="flex items-center space-x-3">
-      <button class="bg-card border border-border text-text-primary px-4 py-2 rounded-full font-semibold text-xs transition-all duration-300 hover:bg-background flex items-center space-x-1.5 shadow-sm cursor-pointer">
-        <svg class="w-4 h-4"><use href="assets/icons.svg#icon-calendar"></use></svg>
-        <span>As of Today</span>
-      </button>
-      <button class="bg-accent-primary text-card px-4 py-2 rounded-full font-semibold text-xs transition-all duration-300 hover:bg-accent-primary/95 flex items-center space-x-1.5 shadow-sm cursor-pointer">
-        <svg class="w-4 h-4"><use href="assets/icons.svg#icon-export"></use></svg>
-        <span>Export Statement</span>
-      </button>
-    </div>
+<div class="space-y-4 md:space-y-5 animate-fade-in pb-8">
+  <!-- Actions Bar -->
+  <div class="flex items-center justify-end space-x-2.5">
+    <button class="bg-card border border-border text-text-primary px-3.5 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 hover:bg-background flex items-center space-x-1.5 shadow-xs cursor-pointer">
+      <svg class="w-3.5 h-3.5 text-text-secondary"><use href="assets/icons.svg#icon-calendar"></use></svg>
+      <span>As of Today</span>
+    </button>
+    <button class="bg-accent-primary text-card px-3.5 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 hover:bg-accent-primary/95 flex items-center space-x-1.5 shadow-sm shadow-accent-primary/20 cursor-pointer">
+      <svg class="w-3.5 h-3.5"><use href="assets/icons.svg#icon-export"></use></svg>
+      <span>Export Statement</span>
+    </button>
   </div>
 
   <!-- Combined net worth bar/card -->
-  <div class="bg-card border border-border rounded-3xl p-6 shadow-sm transition-colors duration-300">
+  <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-sm transition-colors duration-300">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
       <div>
         <span class="font-semibold text-xs tracking-wider text-text-secondary uppercase">
@@ -68,7 +56,7 @@
   <!-- Assets vs Liabilities Dual Column Grid -->
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <!-- ASSETS CARD -->
-    <div class="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col transition-colors duration-300">
+    <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col transition-colors duration-300">
       <div class="flex items-center justify-between border-b border-border/60 pb-4 mb-4">
         <div class="flex items-center space-x-2.5">
           <div class="w-9 h-9 rounded-xl bg-accent-secondary/10 flex items-center justify-center text-accent-secondary">
@@ -114,7 +102,7 @@
     </div>
 
     <!-- LIABILITIES CARD -->
-    <div class="bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col transition-colors duration-300">
+    <div class="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col transition-colors duration-300">
       <div class="flex items-center justify-between border-b border-border/60 pb-4 mb-4">
         <div class="flex items-center space-x-2.5">
           <div class="w-9 h-9 rounded-xl bg-feedback-danger/10 flex items-center justify-center text-feedback-danger">
